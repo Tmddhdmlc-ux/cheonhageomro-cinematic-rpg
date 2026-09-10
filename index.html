@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>천하검로 — Cinematic Wuxia Turn RPG</title>
+  <title>천하검로 v0.2 — 검세와 파훼</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -17,6 +17,7 @@
           <div class="name-row"><strong>설화검객 연휘</strong><span id="player-state">준비</span></div>
           <div class="bar hp"><i id="player-hp"></i><b id="player-hp-text"></b></div>
           <div class="bar mp"><i id="player-mp"></i><b id="player-mp-text"></b></div>
+          <div class="bar poise"><i id="player-poise"></i><b id="player-poise-text">氣勢 100 / 100</b></div>
         </div>
       </div>
 
@@ -26,13 +27,21 @@
         <div class="status-copy">
           <div class="name-row"><span id="enemy-state">대기</span><strong>흑풍검 염라</strong></div>
           <div class="bar hp"><i id="enemy-hp"></i><b id="enemy-hp-text"></b></div>
-          <div class="bar stagger"><i id="enemy-stagger"></i><b>경직 저항</b></div>
+          <div class="bar poise"><i id="enemy-poise"></i><b id="enemy-poise-text">氣勢 100 / 100</b></div>
         </div>
         <div class="portrait enemy">魔</div>
       </div>
     </section>
 
+    <aside id="enemy-intent">
+      <small>NEXT · 다음 초식</small>
+      <strong id="intent-hanja">黑風斬</strong>
+      <b id="intent-name">흑풍참</b>
+      <span id="intent-desc">빠른 대각선 베기 · 기세 피해 낮음</span>
+    </aside>
+
     <aside id="skill-title"><small></small><strong></strong><em></em></aside>
+    <aside id="combat-callout"><strong></strong><span></span></aside>
     <div id="cinema-bars"><i></i><i></i></div>
     <div id="flash"></div>
     <div id="message"></div>
@@ -42,7 +51,10 @@
         <div><span class="diamond"></span><strong>무공 선택</strong><small id="turn-hint">기술을 선택하십시오</small></div>
         <button id="audio-toggle" type="button" aria-label="소리 켜기">音 <span>ON</span></button>
       </header>
-      <div id="skills"></div>
+      <div id="command-grid">
+        <div id="skills"></div>
+        <div id="tactics"></div>
+      </div>
       <footer>
         <span><kbd>1—5</kbd> 기술 즉시 사용</span>
         <span><kbd>F1</kbd> HP 회복</span>
@@ -50,6 +62,9 @@
         <span><kbd>F3</kbd> 적 회복</span>
         <span><kbd>F4</kbd> AI <b id="ai-state">ON</b></span>
         <span><kbd>F5</kbd> 슬로모션 <b id="slow-state">OFF</b></span>
+        <span><kbd>F6/7</kbd> 기세 10</span>
+        <span><kbd>F8</kbd> 예고 변경</span>
+        <span><kbd>F9</kbd> 파세</span>
         <span><kbd>R</kbd> 초기화</span>
       </footer>
     </section>
@@ -63,6 +78,7 @@
   <script src="js/effects.js"></script>
   <script src="js/character.js"></script>
   <script src="js/skills.js"></script>
+  <script src="js/defense.js"></script>
   <script src="js/combat.js"></script>
   <script src="js/main.js"></script>
 </body>

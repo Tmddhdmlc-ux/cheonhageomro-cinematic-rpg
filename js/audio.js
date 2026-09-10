@@ -36,6 +36,8 @@
     hit(power = 1, crit = false) { this.noise(.12 + power * .05, .25 + power * .18, 280 + power * 160); this.tone("square", crit ? 160 : 110, 45, .12 + power * .06, .18); if (crit) this.tone("triangle", 1300, 430, .18, .1, .015); }
     charge() { this.tone("sine", 90, 560, .55, .14); this.tone("triangle", 180, 720, .48, .05, .08); }
     thunder() { this.noise(.85, .7, 120); this.tone("sawtooth", 80, 28, .65, .32); }
+    clash() { this.noise(.18,.42,3100);this.tone("triangle",1850,520,.28,.22);this.tone("square",310,120,.11,.12); }
+    breakPoise() { this.noise(.32,.52,1750);this.tone("sawtooth",760,85,.32,.22);this.tone("square",150,48,.2,.18,.025); }
     toggle() { this.enabled = !this.enabled; if (this.enabled) this.unlock(); return this.enabled; }
   }
   W.AudioEngine = AudioEngine;

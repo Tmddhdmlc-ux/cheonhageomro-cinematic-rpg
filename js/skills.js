@@ -53,13 +53,13 @@
       if(t<.42)this.poseSegment(P.idle,P.plumReady,0,.42);
       else if(t<.65){this.poseSegment(P.plumReady,P.plumCutA,.42,.65);this.a.x=U.lerp(this.ax,this.bx-this.aside*145,U.ease(phase(t,.42,.65)));this.once("dash",()=>this.c.audio.dash());}
       else if(t<1.9){
-        const cuts=[.68,.87,1.06,1.25,1.44,1.63,1.82];let idx=0;while(idx<cuts.length&&t>=cuts[idx]){const i=idx;this.once("cut"+i,()=>{const angles=[-.55,.62,-.18,.9,-.82,.35,-.32];this.c.effects.slash(this.b.x+U.rand(-25,25),this.b.y-105+U.rand(-28,28),angles[i],i===6?"#ffd9e1":"#dffff4",105+i*4,.18);this.fxHit({hitStop:.035,power:.35,knock:12,multi:true,damageScale:.36});this.c.effects.petal(this.b.x,this.b.y-100,2);});idx++;}
+        const cuts=[.68,.87,1.06,1.25,1.44,1.63,1.82];let idx=0;while(idx<cuts.length&&t>=cuts[idx]){const i=idx;this.once("cut"+i,()=>{const angles=[-.55,.62,-.18,.9,-.82,.35,-.32];this.c.effects.slash(this.b.x+U.rand(-25,25),this.b.y-105+U.rand(-28,28),angles[i],i===6?"#ffd9e1":"#dffff4",105+i*4,.18);this.fxHit({hitStop:.035,power:.35,knock:12,multi:true,damageScale:.36,poiseScale:.07});this.c.effects.petal(this.b.x,this.b.y-100,2);});idx++;}
         const slice=Math.floor((t-.65)/.18), local=((t-.65)%.18)/.18;this.a.setPose(mix(slice%2?P.plumCutB:P.plumCutA,slice%2?P.plumCutA:P.plumCutB,local));
         const offsets=[-145,120,-110,105,-130,90,-155];const oi=Math.min(offsets.length-1,Math.floor((t-.65)/.18));this.a.x=this.bx+this.aside*offsets[oi];this.a.y=this.ay-Math.sin(local*Math.PI)*18;this.a.side=this.a.x<this.b.x?1:-1;
       } else if(t<2.12){this.a.setPose(P.plumReady);this.a.x=this.bx-this.aside*155;this.a.y=this.ay;this.a.side=this.aside;}
       else if(t<2.32){this.poseSegment(P.plumReady,Object.assign({},P.basicHit,{sword:.08,arm:.03,reach:1}),2.12,2.32);this.a.x=U.lerp(this.bx-this.aside*155,this.bx-this.aside*118,U.ease(phase(t,2.12,2.32)));}
       else {this.poseSegment(P.basicHit,P.idle,2.32,2.62);this.a.x=U.lerp(this.a.x,this.ax,U.ease(phase(t,2.32,2.62)));}
-      if(t>=2.28)this.once("final",()=>{this.c.flash();this.c.effects.slash(this.b.x,this.b.y-112,.05,"#fff1f5",240,.42);this.c.effects.shockwave(this.b.x,this.b.y-95,"#f5a9ba",145,.5);this.c.effects.petal(this.b.x,this.b.y-100,18);this.fxHit({hitStop:.115,power:1.5,knock:235,final:true,damageScale:2.15});this.c.camera.shake(25,.28);});
+      if(t>=2.28)this.once("final",()=>{this.c.flash();this.c.effects.slash(this.b.x,this.b.y-112,.05,"#fff1f5",240,.42);this.c.effects.shockwave(this.b.x,this.b.y-95,"#f5a9ba",145,.5);this.c.effects.petal(this.b.x,this.b.y-100,18);this.fxHit({hitStop:.115,power:1.5,knock:235,final:true,damageScale:2.15,poiseScale:.51});this.c.camera.shake(25,.28);});
     }
     heaven(t){
       // Deliberately readable whole-body chain: aim → lift → coil → rear-foot drive → full extension.
@@ -75,12 +75,12 @@
       if(t<.65){this.poseSegment(P.idle,P.thunderCharge,0,.55);if(t>.18)this.once("bolt1",()=>this.c.effects.lightning(this.a.x-20,this.a.y-220,this.a.x+15,this.a.y-105,.35));if(t>.4)this.once("bolt2",()=>this.c.effects.lightning(this.a.x+40,this.a.y-250,this.a.x+5,this.a.y-130,.3));}
       else if(t<1.38){const q=U.ease(phase(t,.65,1.38));this.poseSegment(P.thunderCharge,P.jump,.65,.86);this.a.y=this.ay-U.lerp(0,470,q);this.a.x=this.ax+this.aside*70*q;this.c.camera.follow(this.a,1.25);this.once("jump",()=>{this.c.audio.dash();this.c.effects.dust(this.ax,this.ay,this.aside,20);});}
       else if(t<2.03){this.a.setPose(P.jump);this.a.y=this.ay-470;this.c.camera.release();this.c.camera.pan(this.bx,this.by-105,1.22);if(t>1.62)this.once("thunder",()=>this.c.audio.thunder());}
-      else if(t<2.55){const q=U.ease(phase(t,2.03,2.55));this.a.setPose(mix(P.jump,P.dive,q));this.a.x=U.lerp(this.ax+this.aside*70,this.bx-this.aside*20,q);this.a.y=U.lerp(this.ay-470,this.ay-8,q);if(t>2.12)this.once("trail",()=>this.c.effects.lightning(this.a.x,this.a.y-210,this.bx,this.by-40,.45));}
+      else if(t<2.55){const finisher=this.b.broken;if(finisher&&t>2.22)this.c.cinematicRate=.38;const q=U.ease(phase(t,2.03,2.55));this.a.setPose(mix(P.jump,P.dive,q));this.a.x=U.lerp(this.ax+this.aside*70,this.bx-this.aside*20,q);this.a.y=U.lerp(this.ay-470,this.ay-8,q);if(t>2.12)this.once("trail",()=>this.c.effects.lightning(this.a.x,this.a.y-210,this.bx,this.by-40,.45));}
       else if(t<3.15){this.a.setPose(P.land);this.a.x=this.bx-this.aside*20;this.a.y=this.ay;}
       else {this.poseSegment(P.land,P.idle,3.15,3.75);this.a.x=U.lerp(this.a.x,this.ax,U.ease(phase(t,3.15,3.75)));this.c.camera.reset();}
-      if(t>=2.54)this.once("impact",()=>{this.c.flash();this.c.audio.thunder();this.c.effects.shockwave(this.b.x,this.by-12,"#d6fbff",310,.8);this.c.effects.shockwave(this.b.x,this.by-14,"#84def5",190,.55);for(let i=0;i<5;i++)this.c.effects.lightning(this.b.x+U.rand(-150,150),this.by-U.rand(180,330),this.b.x+U.rand(-55,55),this.by-15,.24);this.c.effects.spark(this.b.x,this.by-50,"#c9f9ff",35,1.6);this.fxHit({hitStop:.155,power:2.25,knock:370,down:true,final:true});this.c.camera.shake(38,.48);});
+      if(t>=2.54)this.once("impact",()=>{const finisher=this.b.broken;this.c.cinematicRate=1;this.c.flash();this.c.audio.thunder();this.c.effects.shockwave(this.b.x,this.by-12,"#d6fbff",finisher?380:310,.8);this.c.effects.shockwave(this.b.x,this.by-14,"#84def5",finisher?230:190,.55);for(let i=0;i<(finisher?8:5);i++)this.c.effects.lightning(this.b.x+U.rand(-150,150),this.by-U.rand(180,330),this.b.x+U.rand(-55,55),this.by-15,.24);this.c.effects.spark(this.b.x,this.by-50,"#c9f9ff",finisher?48:35,1.6);this.fxHit({hitStop:finisher?.16:.155,power:finisher?2.65:2.25,knock:finisher?430:370,down:true,final:true,delayNumber:finisher?.22:0});this.c.camera.shake(finisher?46:38,.48);});
     }
-    finish(){if(this.done)return;this.done=true;this.a.x=this.ax;this.a.y=this.ay;this.a.side=this.aside;this.a.clearPose();this.c.camera.release();this.c.camera.reset();this.c.cinematic(false);this.c.skillFinished(this);}
+    finish(){if(this.done)return;this.done=true;this.c.cinematicRate=1;this.a.x=this.ax;this.a.y=this.ay;this.a.side=this.aside;this.a.clearPose();this.c.camera.release();this.c.camera.reset();this.c.cinematic(false);this.c.skillFinished(this);}
   }
   W.SkillRunner=SkillRunner;
 })(window.Wuxia);

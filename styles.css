@@ -69,9 +69,11 @@ body {
 .player-card .bar.hp i { background: linear-gradient(90deg, #bf4038, #76171c); }
 .bar.mp { height: 9px; border-color: #31596c; }
 .bar.mp i { background: linear-gradient(90deg, #23617f, #68c1d7); }
-.bar.stagger { height: 8px; border-color: #665f46; }
-.bar.stagger i { background: linear-gradient(90deg, #816e32, #ded393); }
-.bar.stagger b { font-size: 7px; line-height: 7px; }
+.bar.poise { height: 9px; border-color: #665f46; }
+.bar.poise i { background: linear-gradient(90deg, #806c2d, #e2d58e); box-shadow: inset 0 1px #fff2ab; }
+.bar.poise b { font-size: 7px; line-height: 8px; letter-spacing: .08em; }
+.bar.poise.breaking i { animation: poise-crack .18s steps(2) 4; filter: brightness(1.8); }
+@keyframes poise-crack { 50% { transform: translateX(5px); opacity:.35; } }
 
 #turn-orb { text-align: center; color: #ded5bb; padding-top: 3px; text-shadow: 0 2px 5px #000; }
 #turn-orb::before { content: ""; display: block; margin: 0 auto 5px; width: 52px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
@@ -79,7 +81,7 @@ body {
 #turn-orb b { display: block; margin-top: 4px; font: 500 15px/1.2 serif; letter-spacing: .15em; }
 
 #command-panel {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 182px;
+  position: absolute; left: 0; right: 0; bottom: 0; height: 206px;
   padding: 12px 28px 8px;
   background:
     linear-gradient(90deg, transparent, #c9b96c55 15%, #c9b96c55 85%, transparent) top/100% 1px no-repeat,
@@ -94,26 +96,35 @@ body {
 #audio-toggle { border: 1px solid #4a5655; background: #11191a; color: #c2c5bd; padding: 4px 10px; cursor: pointer; font-family: serif; }
 #audio-toggle span { color: #71c7b4; font: 700 9px system-ui; }
 
-#skills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px; height: 91px; }
+#command-grid { display:grid;grid-template-columns:1fr 310px;gap:10px;height:113px; }
+#skills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; height:113px; }
 .skill-btn {
   position: relative; overflow: hidden; text-align: left; cursor: pointer;
-  border: 1px solid #52605f; padding: 9px 12px 8px 48px;
+  border: 1px solid #52605f; padding: 9px 8px 8px 42px;
   color: #dedbd0; background: linear-gradient(135deg, #172125ee, #090e10ee);
   transition: border-color .15s, background .15s, transform .15s, filter .15s;
 }
-.skill-btn::before { content: attr(data-key); position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ea6a2; font: 700 24px/1 serif; }
-.skill-btn::after { content: ""; position: absolute; left: 40px; top: 14px; bottom: 14px; width: 1px; background: #3c4b4c; }
+.skill-btn::before { content: attr(data-key); position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #9ea6a2; font: 700 21px/1 serif; }
+.skill-btn::after { content: ""; position: absolute; left: 35px; top: 14px; bottom: 14px; width: 1px; background: #3c4b4c; }
 .skill-btn:hover:not(:disabled), .skill-btn:focus-visible { outline: none; border-color: #bfb776; background: linear-gradient(135deg, #273333ee, #0c1213ee); transform: translateY(-2px); }
 .skill-btn:active:not(:disabled) { transform: translateY(0); }
 .skill-btn:disabled { cursor: not-allowed; filter: saturate(.2) brightness(.55); }
 .skill-btn .rank { display: block; color: #76958f; font: 700 8px system-ui; letter-spacing: .18em; }
 .skill-btn.ultimate .rank { color: #d59b6d; }
-.skill-btn strong { display: block; margin: 3px 0 5px; font: 700 15px serif; letter-spacing: .08em; white-space: nowrap; }
+.skill-btn strong { display: block; margin: 3px 0 5px; font: 700 13px serif; letter-spacing: .05em; white-space: nowrap; }
 .skill-btn .meta { display: flex; justify-content: space-between; color: #87918f; font-size: 9px; }
 .skill-btn .cost { color: #68b8cb; }
 .skill-btn .seal { position: absolute; right: -12px; bottom: -22px; color: #bf4c4030; font: 700 62px serif; transform: rotate(-12deg); }
 
 #command-panel footer { display: flex; align-items: center; justify-content: center; gap: 16px; height: 29px; color: #697576; font-size: 9px; }
+#tactics { display:grid;grid-template-columns:repeat(3,1fr);gap:6px; }
+.tactic-btn { position:relative;cursor:pointer;border:1px solid #4a625e;background:linear-gradient(180deg,#182624,#0a1112);color:#d8ddd6;padding:8px 5px 7px;text-align:center;transition:.15s; }
+.tactic-btn:hover:not(:disabled){border-color:#95c7b9;transform:translateY(-2px);background:linear-gradient(180deg,#213632,#0c1516);}
+.tactic-btn:disabled{cursor:not-allowed;filter:saturate(.2) brightness(.5);}
+.tactic-btn small{display:block;color:#78aa9f;font:700 8px system-ui;letter-spacing:.14em;}
+.tactic-btn strong{display:block;margin:7px 0 4px;font:700 13px serif;}
+.tactic-btn em{display:block;color:#72827e;font:normal 8px system-ui;}
+.tactic-btn.armed{border-color:#e1cb80;box-shadow:inset 0 0 18px #ceb95a24,0 0 8px #ceb95a44;}
 kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; border-radius: 2px; color: #9aa5a2; background: #11191a; font: 700 8px system-ui; }
 #ai-state, #slow-state { color: #70c5b3; }
 
@@ -126,6 +137,22 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 #skill-title strong { display: block; font: 700 34px/1.05 serif; letter-spacing: .15em; }
 #skill-title em { display: block; margin-top: 5px; color: #8d9995; font: normal 12px serif; letter-spacing: .28em; }
 @keyframes title-in { 0% {opacity:0;transform:translateX(-22px)} 18%,68% {opacity:1;transform:none} 100% {opacity:0;transform:translateX(12px)} }
+
+#enemy-intent { position:absolute;right:3.2%;top:13.5%;width:240px;padding:9px 12px 10px 17px;color:#d8d4c7;text-align:right;border-right:2px solid #b65c4e;background:linear-gradient(90deg,transparent,#090e11bb);filter:drop-shadow(0 3px 7px #000);transition:opacity .25s,transform .25s; }
+#enemy-intent small { display:block;color:#a56e62;font:700 8px system-ui;letter-spacing:.24em; }
+#enemy-intent strong { display:block;color:#e0c7b6;font:700 20px/1.1 serif;letter-spacing:.12em;margin-top:3px; }
+#enemy-intent b { display:block;font:700 12px serif;letter-spacing:.1em; }
+#enemy-intent span { display:block;color:#8e9794;font-size:8px;margin-top:3px; }
+#game-shell.cinematic #enemy-intent { opacity:0;transform:translateY(-8px); }
+
+#combat-callout { position:absolute;left:50%;top:28%;transform:translate(-50%,-12px) scale(.9);opacity:0;text-align:center;pointer-events:none;color:#f2e8ce;text-shadow:0 4px 12px #000; }
+#combat-callout.show { animation:callout 1.05s ease both; }
+#combat-callout strong { display:block;font:900 62px/1 serif;letter-spacing:.16em;font-family:serif; }
+#combat-callout span { display:block;margin-top:3px;color:#c9ba7e;font:700 13px serif;letter-spacing:.4em; }
+#combat-callout.parry strong { color:#edddad; }
+#combat-callout.break strong { color:#ffd4a4; }
+#combat-callout.evade strong { color:#c9f4e9; }
+@keyframes callout { 0%{opacity:0;transform:translate(-50%,-12px) scale(1.35);filter:blur(6px)} 14%,64%{opacity:1;transform:translate(-50%,0) scale(1);filter:none} 100%{opacity:0;transform:translate(-50%,8px) scale(.94)} }
 
 #cinema-bars { position: absolute; inset: 0; pointer-events: none; }
 #cinema-bars i { position: absolute; left: 0; right: 0; height: 0; background: #020304; transition: height .28s ease; }
@@ -150,8 +177,9 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 
 @media (max-width: 900px), (max-height: 520px) {
   #game-shell { min-width: 0; min-height: 0; }
-  #command-panel { height: 160px; padding: 8px 18px 5px; }
-  #skills { height: 81px; gap: 5px; }
+  #command-panel { height: 180px; padding: 8px 18px 5px; }
+  #command-grid,#skills { height:101px; gap: 5px; }
+  #command-grid{grid-template-columns:1fr 250px;}
   .skill-btn { padding: 7px 7px 6px 36px; }
   .skill-btn::before { left: 9px; font-size: 20px; }
   .skill-btn::after { left: 31px; }

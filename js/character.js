@@ -13,28 +13,50 @@
     constructor(data, x, y) {
       Object.assign(this, JSON.parse(JSON.stringify(data)));
       this.hp=this.maxHp; this.mp=this.maxMp; this.x=x; this.y=y; this.baseX=x; this.baseY=y;
-      this.pose=basePose(); this.poseOverride=null; this.time=Math.random()*4; this.hitTime=0; this.hitPower=0; this.knock=0; this.down=0; this.alpha=1;
+      this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;
+      this.pose=basePose(); this.poseOverride=null; this.time=Math.random()*4; this.hitTime=0; this.hitPower=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1;
     }
-    reset() { this.hp=this.maxHp; this.mp=this.maxMp; this.x=this.baseX; this.y=this.baseY; this.poseOverride=null; this.hitTime=0; this.knock=0; this.down=0; this.alpha=1; }
+    reset() { this.hp=this.maxHp; this.mp=this.maxMp;this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;this.x=this.baseX; this.y=this.baseY; this.poseOverride=null; this.hitTime=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1; }
     setPose(p) { this.poseOverride=Object.assign(basePose(),p||{}); }
     clearPose() { this.poseOverride=null; }
     react(power=1, knock=0, down=false) { this.hitTime=.24+power*.08; this.hitPower=power; this.knock+=knock; if(down)this.down=Math.max(this.down,1.35); }
     update(dt, busy=false) {
       this.time+=dt;
       if(this.hitTime>0)this.hitTime=Math.max(0,this.hitTime-dt);
-      if(this.down>0)this.down=Math.max(0,this.down-dt);
+      if(this.hp<=0)this.deadTime+=dt;else if(this.down>0)this.down=Math.max(0,this.down-dt);
       if(Math.abs(this.knock)>.1){this.x+=this.knock*dt;this.knock*=Math.pow(.045,dt);} else this.knock=0;
       if(!busy && !this.poseOverride) this.x=U.lerp(this.x,this.baseX,1-Math.pow(.025,dt));
     }
     currentPose() {
       const idle=basePose(), breath=Math.sin(this.time*2.15), shift=Math.sin(this.time*.83+1.4);
       idle.crouch+=breath*2.2; idle.torso+=breath*.012+shift*.009; idle.sword+=Math.sin(this.time*1.7)*.012; idle.frontFoot+=Math.sin(this.time*.7)*1.5; idle.cape=Math.sin(this.time*1.2)*.12;
+      const poiseRatio=this.poise/this.maxPoise,hpRatio=this.hp/this.maxHp;
+      if(poiseRatio<.7){const strain=(.7-poiseRatio)/.7;idle.crouch+=strain*7;idle.torso-=strain*.055;idle.sword+=Math.sin(this.time*3.3)*.025*strain;idle.cape+=Math.sin(this.time*2.6)*.08*strain;}
+      if(poiseRatio<.3){const strain=(.3-poiseRatio)/.3;idle.crouch+=strain*8;idle.hipX-=strain*5;idle.head+=Math.sin(this.time*3.8)*.035*strain;}
+      if(hpRatio<.25){idle.crouch+=5;idle.torso-=.045;idle.arm+=.06;}
+      if(this.broken&&!this.poseOverride){idle.crouch+=22;idle.torso-=.25;idle.arm+=.45;idle.sword+=.55;idle.frontFoot-=9;}
       const p=this.poseOverride||idle;
       const out=Object.assign({},p);
       if(this.hitTime>0){const q=this.hitTime/.5;out.torso-=this.hitPower*.14*Math.sin(q*Math.PI);out.head-=this.hitPower*.17*Math.sin(q*Math.PI);out.arm-=.18;}
       return out;
     }
-    snapshot(){return{x:this.x,y:this.y,side:this.side,color:this.color,accent:this.accent,pose:Object.assign({},this.currentPose()),alpha:this.alpha,down:this.down};}
+    anatomy(pose=this.currentPose()){
+      const p=pose,hip={x:p.hipX,y:-94+p.crouch-p.rootLift},torsoA=p.torso;
+      const shoulder={x:hip.x+Math.sin(-torsoA)*8+Math.sin(torsoA)*-72,y:hip.y-Math.cos(torsoA)*72};
+      const neck={x:shoulder.x+3,y:shoulder.y-4},head={x:neck.x+Math.sin(p.head)*10,y:neck.y-24};
+      const sh={x:shoulder.x+8,y:shoulder.y+9},armAngle=p.arm;
+      const el={x:sh.x+Math.cos(armAngle)*43,y:sh.y+Math.sin(armAngle)*43};
+      const handAngle=armAngle+p.elbow*(1-p.reach*.6);
+      const hand={x:el.x+Math.cos(handAngle)*(38+20*p.reach),y:el.y+Math.sin(handAngle)*(38+20*p.reach)};
+      const tip={x:hand.x+Math.cos(p.sword)*(102+p.swordPull*16),y:hand.y+Math.sin(p.sword)*(102+p.swordPull*16)};
+      const world=q=>({x:this.x+this.side*q.x,y:this.y+q.y});
+      return{hip:world(hip),torso:world({x:(hip.x+shoulder.x)/2,y:(hip.y+shoulder.y)/2}),shoulder:world(shoulder),hand:world(hand),head:world(head),swordTip:world(tip)};
+    }
+    getSwordTip(){return this.anatomy().swordTip;}
+    getHandPosition(){return this.anatomy().hand;}
+    getHeadPosition(){return this.anatomy().head;}
+    getTorsoPosition(){return this.anatomy().torso;}
+    snapshot(){return{x:this.x,y:this.y,side:this.side,color:this.color,accent:this.accent,pose:Object.assign({},this.currentPose()),alpha:this.alpha,down:this.down,deadTime:this.deadTime};}
     draw(ctx){Character.drawSnapshot(ctx,this.snapshot(),false);}
 
     static limb(ctx,a,b,w1,w2,color,edge){
@@ -46,7 +68,7 @@
       return{x:hip.x+Math.cos(a-bend*c)*l1,y:hip.y+Math.sin(a-bend*c)*l1};
     }
     static drawSnapshot(ctx,s,ghost){
-      const p=s.pose, hit=s.down>0?Math.min(1,s.down*2):0;
+      const p=s.pose, hit=s.deadTime>0?U.clamp((s.deadTime-.5)/.35,0,1):(s.down>0?Math.min(1,s.down*2):0);
       ctx.save();ctx.globalAlpha*=s.alpha;ctx.translate(s.x,s.y);ctx.scale(s.side,1);
       if(hit){ctx.translate(12*hit,-6*hit);ctx.rotate(-1.25*hit);ctx.translate(0,50*hit);}
       const edge=ghost?s.accent:"#091012", cloth=ghost?s.accent:s.color, dark=ghost?s.accent:"#243033", accent=s.accent;

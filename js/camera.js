@@ -13,6 +13,9 @@
     follow(target, zoom) { this.followTarget = target; if (zoom != null) this.targetZoom = zoom; }
     release() { this.followTarget = null; }
     shake(power, duration) { this.shakePower = Math.max(this.shakePower, power); this.shakeTime = Math.max(this.shakeTime, duration); }
+    punch(direction=1, power=18) { this.x-=direction*power; this.shake(power*.35,.1); }
+    focusBetween(a,b,zoom=1.2) { this.release(); this.pan((a.x+b.x)/2,(a.y+b.y)/2-95,zoom); }
+    slowPush(x,y,zoom=1.15) { this.release(); this.targetX=x; this.targetY=y; this.targetZoom=zoom; }
     update(dt) {
       if (this.followTarget) { this.targetX = this.followTarget.x; this.targetY = this.followTarget.y - 95; }
       const k = 1 - Math.pow(.0005, dt);
