@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>천하검로 — Cinematic Wuxia Turn RPG</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="game-shell" aria-label="천하검로 전투 화면">
+    <canvas id="game" width="1280" height="720"></canvas>
+
+    <section id="hud" aria-live="polite">
+      <div class="status-card player-card">
+        <div class="portrait">劍</div>
+        <div class="status-copy">
+          <div class="name-row"><strong>설화검객 연휘</strong><span id="player-state">준비</span></div>
+          <div class="bar hp"><i id="player-hp"></i><b id="player-hp-text"></b></div>
+          <div class="bar mp"><i id="player-mp"></i><b id="player-mp-text"></b></div>
+        </div>
+      </div>
+
+      <div id="turn-orb"><span>PLAYER</span><b>你的回合</b></div>
+
+      <div class="status-card enemy-card">
+        <div class="status-copy">
+          <div class="name-row"><span id="enemy-state">대기</span><strong>흑풍검 염라</strong></div>
+          <div class="bar hp"><i id="enemy-hp"></i><b id="enemy-hp-text"></b></div>
+          <div class="bar stagger"><i id="enemy-stagger"></i><b>경직 저항</b></div>
+        </div>
+        <div class="portrait enemy">魔</div>
+      </div>
+    </section>
+
+    <aside id="skill-title"><small></small><strong></strong><em></em></aside>
+    <div id="cinema-bars"><i></i><i></i></div>
+    <div id="flash"></div>
+    <div id="message"></div>
+
+    <section id="command-panel">
+      <header>
+        <div><span class="diamond"></span><strong>무공 선택</strong><small id="turn-hint">기술을 선택하십시오</small></div>
+        <button id="audio-toggle" type="button" aria-label="소리 켜기">音 <span>ON</span></button>
+      </header>
+      <div id="skills"></div>
+      <footer>
+        <span><kbd>1—5</kbd> 기술 즉시 사용</span>
+        <span><kbd>F1</kbd> HP 회복</span>
+        <span><kbd>F2</kbd> 내력 회복</span>
+        <span><kbd>F3</kbd> 적 회복</span>
+        <span><kbd>F4</kbd> AI <b id="ai-state">ON</b></span>
+        <span><kbd>F5</kbd> 슬로모션 <b id="slow-state">OFF</b></span>
+        <span><kbd>R</kbd> 초기화</span>
+      </footer>
+    </section>
+
+    <div id="tooltip" role="tooltip"></div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/skills.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
