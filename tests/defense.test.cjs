@@ -74,9 +74,11 @@ test("same skill, tactic, and visible poise always resolve identically", () => {
 
 test("resolveOutcome contains no random branch", () => {
   const source = fs.readFileSync(path.join(root, "js/defense.js"), "utf8");
-  const method = source.match(/resolveOutcome\(\)\{([\s\S]*?)\n\s*\}\n\s*pose\(/)?.[1];
-  assert.ok(method);
-  assert.doesNotMatch(method, /Math\.random|U\.rand/);
+  for (const candidate of [source, source.replace(/\r?\n/g, "\r\n")]) {
+    const method = candidate.match(/resolveOutcome\(\)\{([\s\S]*?)\r?\n\s*\}\r?\n\s*pose\(/)?.[1];
+    assert.ok(method);
+    assert.doesNotMatch(method, /Math\.random|U\.rand/);
+  }
 });
 
 test("darkChain snapshots starting poise and gives its clash cost distinct feedback", () => {
