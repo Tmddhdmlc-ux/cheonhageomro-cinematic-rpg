@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const context = vm.createContext({ console });
 context.window = context;
-for (const file of ["js/data.js", "js/character.js", "js/skills.js", "js/defense.js", "js/combat.js"]) {
+for (const file of ["js/data.js", "js/character.js", "js/boss-phase.js", "js/skills.js", "js/defense.js", "js/combat.js"]) {
   vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), context, { filename: file });
 }
 const W = context.Wuxia;

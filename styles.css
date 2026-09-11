@@ -33,7 +33,8 @@ body {
   user-select: none;
 }
 
-#game { position: absolute; inset: 0; width: 100%; height: 100%; }
+#game { position: absolute; inset: 0; width: 100%; height: 100%; transition:filter .2s ease; }
+#game-shell.phase-transition #game { filter:brightness(.72) saturate(.82); }
 
 #hud {
   position: absolute; inset: 2.2% 2.5% auto;
@@ -60,6 +61,8 @@ body {
 .name-row { display: flex; justify-content: space-between; align-items: end; margin-bottom: 5px; }
 .name-row strong { font-family: serif; font-size: 17px; letter-spacing: .08em; text-shadow: 0 1px 5px #000; }
 .name-row span { color: #aeb9b7; font-size: 10px; letter-spacing: .1em; }
+#enemy-phase { display:inline-block;margin-left:6px;padding:2px 5px;border:1px solid #76635a;color:#b7a69e;font:700 8px/1 system-ui;letter-spacing:.06em;vertical-align:2px;transition:.25s; }
+#enemy-phase.active { border-color:#4d9695;color:#8fd1ce;background:#173335aa;box-shadow:0 0 9px #3c8f8f44; }
 
 .bar { position: relative; height: 14px; margin: 4px 0; background: #071012cc; border: 1px solid #68716d; overflow: hidden; transform: skewX(-14deg); }
 .bar i { display: block; height: 100%; width: 100%; transition: width .35s ease; }
@@ -140,10 +143,15 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 
 #enemy-intent { position:absolute;right:3.2%;top:13.5%;width:240px;padding:9px 12px 10px 17px;color:#d8d4c7;text-align:right;border-right:2px solid #b65c4e;background:linear-gradient(90deg,transparent,#090e11bb);filter:drop-shadow(0 3px 7px #000);transition:opacity .25s,transform .25s; }
 #enemy-intent small { display:block;color:#a56e62;font:700 8px system-ui;letter-spacing:.24em; }
+#enemy-intent #intent-phase { max-height:0;opacity:0;margin-top:0;color:#72aaa8;letter-spacing:.12em;transition:.2s; }
+#enemy-intent #intent-phase.visible { max-height:18px;opacity:1;margin-top:4px; }
 #enemy-intent strong { display:block;color:#e0c7b6;font:700 20px/1.1 serif;letter-spacing:.12em;margin-top:3px; }
 #enemy-intent b { display:block;font:700 12px serif;letter-spacing:.1em; }
 #enemy-intent span { display:block;color:#8e9794;font-size:8px;margin-top:3px; }
 #enemy-intent #intent-response { color:#e0c27c;font-weight:800;letter-spacing:.04em; }
+#enemy-intent.signature { border-color:#d59a62;animation:signature-intent 1.35s ease-in-out infinite; }
+#enemy-intent.signature #intent-phase { color:#e0aa72; }
+@keyframes signature-intent { 0%,100%{box-shadow:0 0 0 #d59a6200} 50%{box-shadow:0 0 16px #d59a6244} }
 #game-shell.cinematic #enemy-intent { opacity:0;transform:translateY(-8px); }
 
 #combat-callout { position:absolute;left:50%;top:28%;transform:translate(-50%,-12px) scale(.9);opacity:0;text-align:center;pointer-events:none;color:#f2e8ce;text-shadow:0 4px 12px #000; }
@@ -153,6 +161,8 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 #combat-callout.break span { max-width:720px;white-space:nowrap;letter-spacing:.06em; }
 #combat-callout.parry strong { color:#edddad; }
 #combat-callout.break strong { color:#ffd4a4; }
+#combat-callout.phase strong { color:#76c9c5;text-shadow:0 0 16px #235f63,0 4px 12px #000; }
+#combat-callout.signature strong { color:#f0c17c;text-shadow:0 0 15px #8f4939,0 4px 12px #000; }
 #combat-callout.evade strong { color:#c9f4e9; }
 @keyframes callout { 0%{opacity:0;transform:translate(-50%,-12px) scale(1.35);filter:blur(6px)} 14%,64%{opacity:1;transform:translate(-50%,0) scale(1);filter:none} 100%{opacity:0;transform:translate(-50%,8px) scale(.94)} }
 

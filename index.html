@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>천하검로 v0.3 — 확정 파훼</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>천하검로 v0.4 — 살풍세</title>
+  <link rel="stylesheet" href="styles.css?v=0.4.0" />
 </head>
 <body>
   <main id="game-shell" aria-label="천하검로 전투 화면">
@@ -25,7 +25,7 @@
 
       <div class="status-card enemy-card">
         <div class="status-copy">
-          <div class="name-row"><span id="enemy-state">대기</span><strong>흑풍검 염라</strong></div>
+          <div class="name-row"><span id="enemy-state">대기</span><strong>흑풍검 염라 <small id="enemy-phase">1식</small></strong></div>
           <div class="bar hp"><i id="enemy-hp"></i><b id="enemy-hp-text"></b></div>
           <div class="bar poise"><i id="enemy-poise"></i><b id="enemy-poise-text">氣勢 100 / 100</b></div>
         </div>
@@ -35,6 +35,7 @@
 
     <aside id="enemy-intent">
       <small>NEXT · 다음 초식</small>
+      <small id="intent-phase"></small>
       <strong id="intent-hanja">黑風斬</strong>
       <b id="intent-name">흑풍참</b>
       <span id="intent-desc">빠른 대각선 베기 · 기세 피해 낮음</span>
@@ -73,14 +74,15 @@
     <div id="tooltip" role="tooltip"></div>
   </main>
 
-  <script src="js/data.js"></script>
-  <script src="js/camera.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/effects.js"></script>
-  <script src="js/character.js"></script>
-  <script src="js/skills.js"></script>
-  <script src="js/defense.js"></script>
-  <script src="js/combat.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/data.js?v=0.4.0"></script>
+  <script src="js/camera.js?v=0.4.0"></script>
+  <script src="js/audio.js?v=0.4.0"></script>
+  <script src="js/effects.js?v=0.4.0"></script>
+  <script src="js/character.js?v=0.4.0"></script>
+  <script src="js/boss-phase.js?v=0.4.0"></script>
+  <script src="js/skills.js?v=0.4.0"></script>
+  <script src="js/defense.js?v=0.4.0"></script>
+  <script src="js/combat.js?v=0.4.0"></script>
+  <script src="js/main.js?v=0.4.0"></script>
 </body>
 </html>

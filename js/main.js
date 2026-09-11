@@ -10,7 +10,7 @@
       this.cacheDom();this.buildSkills();this.buildTactics();this.bind();this.combat.reset();requestAnimationFrame(t=>this.loop(t));
     }
     cacheDom(){
-      const ids=["player-hp","player-mp","player-poise","enemy-hp","enemy-poise","player-hp-text","player-mp-text","player-poise-text","enemy-hp-text","enemy-poise-text","player-state","enemy-state","turn-orb","turn-hint","ai-state","slow-state","tooltip","skill-title","combat-callout","flash","message","audio-toggle","intent-hanja","intent-name","intent-desc","intent-response"];
+      const ids=["player-hp","player-mp","player-poise","enemy-hp","enemy-poise","player-hp-text","player-mp-text","player-poise-text","enemy-hp-text","enemy-poise-text","player-state","enemy-state","enemy-phase","turn-orb","turn-hint","ai-state","slow-state","tooltip","skill-title","combat-callout","flash","message","audio-toggle","enemy-intent","intent-phase","intent-hanja","intent-name","intent-desc","intent-response"];
       this.el={};for(const id of ids)this.el[id]=document.getElementById(id);
     }
     buildSkills(){
@@ -36,6 +36,9 @@
       this.el["player-hp-text"].textContent=`${Math.ceil(p.hp).toLocaleString()} / ${p.maxHp.toLocaleString()}`;this.el["player-mp-text"].textContent=`내력 ${Math.ceil(p.mp)} / ${p.maxMp}`;this.el["player-poise-text"].textContent=p.broken?"破勢 / BREAK":`氣勢 ${Math.ceil(p.poise)} / ${p.maxPoise}`;this.el["enemy-hp-text"].textContent=`${Math.ceil(e.hp).toLocaleString()} / ${e.maxHp.toLocaleString()}`;this.el["enemy-poise-text"].textContent=e.broken?"破勢 / BREAK":`氣勢 ${Math.ceil(e.poise)} / ${e.maxPoise}`;
       const orb=this.el["turn-orb"];if(c.over){orb.innerHTML="<span>DUEL END</span><b>勝敗已決</b>";}else if(c.runner){orb.innerHTML="<span>EXECUTING</span><b>劍勢如虹</b>";}else if(c.turn==="player"){orb.innerHTML="<span>PLAYER</span><b>你的回合</b>";}else{orb.innerHTML="<span>ENEMY</span><b>敵方回合</b>";}
       this.el["turn-hint"].textContent=c.runner?"초식 전개 중":c.turn==="player"?"무공 또는 대응 전술을 선택하십시오":"적의 기세를 살피는 중";this.el["player-state"].textContent=p.broken?"파세":c.runner&&c.runner.a===p?"행동":p.guard?"대응 준비":"준비";this.el["enemy-state"].textContent=e.broken?"파세":c.runner&&c.runner.a===e?"공격":c.turn==="enemy"?"주시":"대기";this.el["ai-state"].textContent=c.ai?"ON":"OFF";this.el["slow-state"].textContent=c.slow?"ON":"OFF";
+      this.el["enemy-phase"].textContent=c.phase.active?"2식 · 살풍세":"1식";this.el["enemy-phase"].classList.toggle("active",c.phase.active);
+      this.el["intent-phase"].textContent=c.phase.active?`살풍세 ${c.phase.phaseStep}/4${c.phase.signatureArmed?" · 절기":""}`:"";
+      this.el["intent-phase"].classList.toggle("visible",c.phase.active);this.el["enemy-intent"].classList.toggle("signature",c.phase.signatureArmed);
       if(c.intent){this.el["intent-hanja"].textContent=c.intent.hanja;this.el["intent-name"].textContent=c.intent.name;this.el["intent-desc"].textContent=`${c.intent.intent} · ${c.intent.threat}`;this.el["intent-response"].textContent=c.intent.responseHint;}
       document.querySelectorAll(".skill-btn").forEach((b,i)=>b.disabled=c.turn!=="player"||!!c.runner||c.over||p.mp<W.SKILLS[i].cost);
       document.querySelectorAll(".tactic-btn").forEach(b=>{b.disabled=c.turn!=="player"||!!c.runner||c.over;b.classList.toggle("armed",p.guard===b.dataset.id);});
@@ -71,5 +74,5 @@
     }
   }
   window.__WUXIA_GAME__=new Game();
-  Object.defineProperty(window,"__WUXIA_DEBUG__",{get(){const g=window.__WUXIA_GAME__;return{turn:g.combat.turn,running:g.combat.runner?.s.id||null,playerHp:g.player.hp,playerMp:g.player.mp,playerPoise:g.player.poise,playerGuard:g.player.guard,enemyHp:g.enemy.hp,enemyPoise:g.enemy.poise,enemyBroken:g.enemy.broken,intent:g.combat.intent?.id||null,ai:g.combat.ai,slow:g.combat.slow};}});
+  Object.defineProperty(window,"__WUXIA_DEBUG__",{get(){const g=window.__WUXIA_GAME__,phase=g.combat.phase;return{turn:g.combat.turn,running:g.combat.runner?.s.id||null,playerHp:g.player.hp,playerMp:g.player.mp,playerPoise:g.player.poise,playerGuard:g.player.guard,enemyHp:g.enemy.hp,enemyPoise:g.enemy.poise,enemyBroken:g.enemy.broken,intent:g.combat.intent?.id||null,ai:g.combat.ai,slow:g.combat.slow,enemyPhase:phase.phase,phaseStep:phase.phaseStep,phaseRoute:phase.route,signatureArmed:phase.signatureArmed};}});
 })(window.Wuxia);

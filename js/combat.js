@@ -6,10 +6,11 @@
       this.game=game;this.camera=game.camera;this.effects=game.effects;this.audio=game.audio;this.player=game.player;this.enemy=game.enemy;
       this.runner=null;this.turn="player";this.ai=true;this.slow=false;this.wait=0;this.hitStop=0;this.over=false;this.round=1;this.intent=null;this.intentIndex=0;this.deferred=[];
       this.playerHabits={counter:0,evade:0,breathe:0};
+      this.phase=new W.BossPhaseController(this);
     }
     reset(){
       this.player.reset();this.enemy.reset();this.effects.clear();this.runner=null;this.hitStop=0;this.wait=0;this.deferred=[];this.over=false;this.round=1;this.playerHabits={counter:0,evade:0,breathe:0};
-      this.turn=this.player.speed>=this.enemy.speed?"player":"enemy";this.camera.reset(true);this.cinematic(false);this.selectEnemyIntent(true);this.game.updateUI();this.game.setMessage("비무를 시작합니다",850);if(this.turn==="enemy")this.wait=.7;
+      this.phase.reset();this.game.shell.classList.remove?.("phase-transition");this.turn=this.player.speed>=this.enemy.speed?"player":"enemy";this.camera.reset(true);this.cinematic(false);this.selectEnemyIntent(true);this.game.updateUI();this.game.setMessage("비무를 시작합니다",850);if(this.turn==="enemy")this.wait=.7;
     }
     useSkill(id){
       if(this.over||this.runner||this.turn!=="player")return false;const s=W.SKILLS.find(x=>x.id===id);if(!s)return false;if(this.player.mp<s.cost){this.game.setMessage("내력이 부족합니다",800);this.audio.tone("square",90,70,.12,.08);return false;}
@@ -19,6 +20,7 @@
       if(this.over||this.runner||this.turn!=="player")return false;const t=W.TACTICS.find(x=>x.id===id);if(!t)return false;this.audio.unlock();this.playerHabits[id]=(this.playerHabits[id]||0)+1;this.runner=new W.TacticRunner(this,this.player,this.enemy,t);this.game.updateUI();return true;
     }
     selectEnemyIntent(forceCycle=false){
+      if(this.phase.active)return this.phase.syncIntent();
       const skills=W.ENEMY_SKILLS,e=this.enemy,p=this.player;
       if(forceCycle&&this.intent){this.intentIndex=(this.intentIndex+1)%4;this.intent=skills[this.intentIndex];this.game.updateUI();return this.intent;}
       const weighted=[];
@@ -28,11 +30,14 @@
       if(e.poise<28)add("darkBreath",4);
       this.intent=weighted[Math.floor(Math.random()*weighted.length)]||skills[0];this.intentIndex=skills.indexOf(this.intent);this.game.updateUI();return this.intent;
     }
-    forceIntent(){this.intentIndex=(this.intentIndex+1)%4;this.intent=W.ENEMY_SKILLS[this.intentIndex];this.game.updateUI();this.game.setMessage(`다음 초식: ${this.intent.name}`,700);}
+    forceIntent(){
+      if(this.phase.active){const skill=this.phase.forceNext();if(skill)this.game.setMessage(`살풍세 ${this.phase.phaseStep}/4 · ${skill.name}`,700);return;}
+      this.intentIndex=(this.intentIndex+1)%4;this.intent=W.ENEMY_SKILLS[this.intentIndex];this.game.updateUI();this.game.setMessage(`다음 초식: ${this.intent.name}`,700);
+    }
     enemyAttack(){
       if(this.over||this.runner||!this.ai)return;
       if(this.enemy.broken){this.enemy.broken=false;this.enemy.poise=Math.max(42,this.enemy.poise);}
-      const s=this.intent||this.selectEnemyIntent();this.runner=new W.EnemySkillRunner(this,this.enemy,this.player,s);this.game.updateUI();
+      const s=this.intent||this.selectEnemyIntent();this.phase.beforeEnemyAttack(s);this.runner=new W.EnemySkillRunner(this,this.enemy,this.player,s);this.game.updateUI();
     }
     hit(attacker,target,skill,opt={}){
       const alreadyBroken=target.broken,range=skill.damage||[500,700],scale=opt.damageScale||1,atk=attacker.attack/100;
@@ -49,6 +54,7 @@
     breakPoise(target,attacker){
       target.broken=true;target.breakPending=true;target.react(1.8,130*attacker.side,false);this.hitStop=Math.max(this.hitStop,.13);this.audio.breakPoise();
       const torso=target.getTorsoPosition();this.effects.shockwave(torso.x,torso.y,"#ffdaa0",155,.52);this.effects.spark(torso.x,torso.y,"#ffe0a1",30,1.45);this.camera.focusBetween(attacker,target,1.18);this.camera.punch(attacker.side,18);this.camera.shake(23,.28);this.callout("破勢","파세","break");
+      this.phase.handleEnemyPoiseBreak(target,attacker);
       const bar=target===this.enemy?document.getElementById("enemy-poise").parentElement:document.getElementById("player-poise").parentElement;bar?.classList.add("breaking");setTimeout(()=>bar?.classList.remove("breaking"),750);
     }
     defer(delay,fn){this.deferred.push({time:delay,fn});}
@@ -63,6 +69,9 @@
     skillFinished(r){
       this.runner=null;
       if(r.b.hp<=0){this.over=true;this.turn="over";const finisher=r.s?.id==="thunder"&&r.b.broken;this.defer(finisher?.5:0,()=>{this.game.setMessage(r.b===this.enemy?"승리 — 검로가 열렸습니다":"패배 — 호흡을 가다듬으십시오",2600);if(finisher)this.callout("勝","승리","parry");});this.game.updateUI();return;}
+      const earnedExtra=!!r.b.breakPending;
+      if(r.a===this.player&&r.b===this.enemy)this.phase.armIfEligible();
+      if(r.a===this.enemy&&this.phase.active)this.phase.advanceAfterEnemySkill(r.s);
       if(r.a===this.player){
         if(!this.player.broken)this.player.poise=Math.min(this.player.maxPoise,this.player.poise+this.player.poiseRecovery);
         if(r.s?.id==="breathe")this.player.guard=null;
@@ -76,7 +85,12 @@
       }
       if(r.a===this.player&&r.b.broken&&!r.b.breakPending&&this.turn==="enemy"){r.b.broken=false;r.b.poise=Math.max(42,r.b.poise);}
       if(r.a===this.enemy&&r.b.broken&&!r.b.breakPending&&this.turn==="player"){r.b.broken=false;r.b.poise=Math.max(42,r.b.poise);}
+      if(r.a===this.player&&this.phase.transitionPending&&!earnedExtra)this.phase.beginTransition();
       this.game.updateUI();
+    }
+    phaseTransitionFinished(r){
+      if(this.runner!==r)return;
+      this.runner=null;this.enemy.broken=false;this.enemy.breakPending=false;this.enemy.poise=this.enemy.maxPoise;this.turn=this.ai?"enemy":"player";this.wait=this.ai?.42:0;this.game.updateUI();
     }
     toggleAI(){this.ai=!this.ai;if(!this.ai&&this.turn==="enemy"&&!this.runner){this.turn="player";this.wait=0;}this.game.updateUI();this.game.setMessage(`적 AI ${this.ai?"ON":"OFF"}`,700);}
     toggleSlow(){this.slow=!this.slow;this.game.updateUI();this.game.setMessage(`슬로모션 ${this.slow?"ON":"OFF"}`,700);}
