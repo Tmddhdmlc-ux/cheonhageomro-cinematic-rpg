@@ -20,6 +20,18 @@
   });
   const stancePose=stance=>stance==="salpungse"?salpungsePose():stance==="cheolsanse"?cheolsansePose():basePose();
   const mixPose=(a,b,t)=>{const out={};t=U.smooth(U.clamp(t,0,1));for(const key of Object.keys(Object.assign({},a,b)))out[key]=U.lerp(a[key]??0,b[key]??0,t);return out;};
+  W.SWORD_BIND_POSES={
+    playerBind:{...basePose(),crouch:22,hipX:8,torso:.16,frontFoot:55,backFoot:-51,arm:-.12,elbow:.08,reach:1,sword:-.18,swordPull:.38,offArm:.3,offElbow:.08,cape:-.22},
+    playerPress:{...basePose(),crouch:31,hipX:24,torso:.36,frontFoot:69,backFoot:-62,backLift:2,arm:.08,elbow:.02,reach:1,sword:.02,swordPull:.48,offArm:.18,offElbow:.04,cape:-.72},
+    playerShift:{...basePose(),crouch:19,hipX:17,torso:-.27,frontFoot:76,frontLift:3,backFoot:-34,arm:-.54,elbow:.06,reach:1,sword:-.62,swordPull:.64,offArm:-.12,offElbow:.18,cape:.66,twist:-.35},
+    playerRecall:{...basePose(),crouch:18,hipX:-19,torso:-.24,frontFoot:18,backFoot:-67,arm:.7,elbow:.28,reach:.62,sword:.82,swordPull:.08,offArm:2.55,offElbow:.18,cape:.52},
+    enemyBind:{...basePose(),crouch:28,hipX:-12,torso:-.22,frontFoot:22,backFoot:-70,arm:-.32,elbow:.2,reach:.92,sword:-.28,swordPull:.26,offArm:2.55,offElbow:.18,cape:.34},
+    enemyGuard:{...basePose(),crouch:38,hipX:-22,torso:-.35,frontFoot:9,backFoot:-82,arm:-.48,elbow:.3,reach:.86,sword:-.42,swordPull:.18,offArm:2.72,offElbow:.14,cape:.16},
+    enemyLure:{...basePose(),crouch:23,hipX:-25,torso:-.42,frontFoot:38,backFoot:-58,frontLift:2,arm:-.86,elbow:.18,reach:.94,sword:-.78,swordPull:.4,offArm:2.84,offElbow:.13,cape:.78,twist:.28},
+    heavyBind:{...cheolsansePose(),crouch:44,hipX:-26,torso:-.34,frontFoot:5,backFoot:-88,arm:-.5,elbow:.28,reach:.9,sword:-.45,swordPull:.05,offArm:-.46,offElbow:.18,cape:.18},
+    heavyGuard:{...cheolsansePose(),crouch:52,hipX:-32,torso:-.43,frontFoot:1,backFoot:-94,arm:-.62,elbow:.2,reach:.92,sword:-.55,swordPull:.04,offArm:-.58,offElbow:.12,cape:.08},
+    heavyLure:{...cheolsansePose(),crouch:41,hipX:-35,torso:-.5,frontFoot:20,backFoot:-82,frontLift:2,arm:-.9,elbow:.3,reach:.76,sword:-.86,swordPull:.02,offArm:-.7,offElbow:.2,cape:.42,twist:.22}
+  };
   const openingPose=id=>{
     const poses={
       crossGuard:{...basePose(),crouch:18,hipX:-10,torso:-.16,head:-.02,frontFoot:21,backFoot:-61,arm:-.48,elbow:.42,reach:.72,sword:-.42,swordPull:.18,offArm:2.42,offElbow:.22,cape:.32},

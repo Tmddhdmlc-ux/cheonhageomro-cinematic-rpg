@@ -4,6 +4,16 @@
   W.CONFIG = { width: 1280, height: 720, stageBottom: 540 };
   W.normalizeCombatKey = key => key===" "||key==="Spacebar"?"SPACE":String(key||"").toUpperCase();
   W.BASIC_CHAIN = { baseChance:.25, exploitBonus:.25, pityMisses:2, damageScale:.55, poiseScale:.50, initiativeCritBonus:.20, duration:1.08 };
+  W.SWORD_BIND = {
+    enemyChoices:["guard","lure"],eligibleOpenings:["crossGuard","ironWallClose"],revealDelay:.10,resolveDuration:.40,
+    pressPoiseDamage:26,lossPoiseDamage:18,shiftDamageScale:.55,shiftPoiseScale:.50,shiftCritBonus:.15,
+    choices:{
+      press:{key:"E",hanja:"壓",name:"압검",hint:"고수를 누름 · 유인에 패배"},
+      shift:{key:"W",hanja:"變",name:"변검",hint:"유인을 벰 · 고수에 패배"},
+      recall:{key:"SPACE",hanja:"回",name:"회검",hint:"안전 종료 · 추가 이득 없음"}
+    },
+    responses:{guard:{hanja:"固守",name:"고수"},lure:{hanja:"誘引",name:"유인"}}
+  };
 
   W.SKILLS = [
     {

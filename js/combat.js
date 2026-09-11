@@ -9,6 +9,7 @@
       this.playerHabits={counter:0,evade:0,breathe:0};
       this.awaitingResponse=false;this.responseSkillId=null;this.selectedResponse=null;this.resolvedOutcome=null;this.initiative=0;this.basicChainPity=0;this.basicChainChance=W.BASIC_CHAIN.baseChance;this.basicChainTriggered=false;this.random=()=>Math.random();
       this.responseHistory=[];this.feintAlternate={yama:0,mujin:0};this.clearFeintReservation();
+      this.bindHistory=[];this.bindAlternate={yama:0,mujin:0};this.clearBindReservation();
       this.phase=new W.BossPhaseController(this);
       this.mujin=this.enemyConfig.ai?.type==="fixedCycle"&&W.MujinIntentController?new W.MujinIntentController(this):null;
       this.enemyDefense=new W.EnemyDefenseController(this);
@@ -26,7 +27,7 @@
       if(id==="counter"||id==="evade")return this.chooseResponse(id);
       if((this.game.mode&&this.game.mode!=="duel")||this.over||this.runner||this.turn!=="player"||id!=="breathe")return false;const t=W.TACTICS.find(x=>x.id===id);if(!t)return false;this.audio.unlock();this.playerHabits.breathe++;this.runner=new W.TacticRunner(this,this.player,this.enemy,t);this.game.updateUI();return true;
     }
-    clearMindgameState(){this.awaitingResponse=false;this.responseSkillId=null;this.selectedResponse=null;this.resolvedOutcome=null;this.initiative=0;this.basicChainPity=0;this.basicChainChance=W.BASIC_CHAIN.baseChance;this.basicChainTriggered=false;this.responseHistory=[];this.feintAlternate={yama:0,mujin:0};this.clearFeintReservation();this.player.guard=null;}
+    clearMindgameState(){this.awaitingResponse=false;this.responseSkillId=null;this.selectedResponse=null;this.resolvedOutcome=null;this.initiative=0;this.basicChainPity=0;this.basicChainChance=W.BASIC_CHAIN.baseChance;this.basicChainTriggered=false;this.responseHistory=[];this.feintAlternate={yama:0,mujin:0};this.clearFeintReservation();this.bindHistory=[];this.bindAlternate={yama:0,mujin:0};this.clearBindReservation();this.player.guard=null;}
     clearFeintReservation(){this.feintArmed=false;this.feintId=null;this.feintBranch=null;this.branchReason=null;this.branchCommitted=false;this.feintRevealed=false;}
     feintReservation(){return this.branchCommitted?{feintId:this.feintId,feintBranch:this.feintBranch,branchReason:this.branchReason}:null;}
     restoreFeintReservation(saved){if(!saved)return false;this.feintArmed=true;this.feintId=saved.feintId;this.feintBranch=saved.feintBranch;this.branchReason=saved.branchReason;this.branchCommitted=true;this.feintRevealed=false;return true;}
@@ -47,6 +48,38 @@
     grantInitiative(){this.initiative=1;this.game.setMessage("先機 · 다음 기본검 연격 확정",950);this.audio.tone?.("sine",760,1180,.16,.05);this.game.updateUI();}
     previewBasicChain(opening){const cfg=W.BASIC_CHAIN,eligible=opening?.result!=="resisted";if(this.initiative)return{chance:1,reason:"선기 확정",initiative:true};if(eligible&&this.basicChainPity>=cfg.pityMisses)return{chance:1,reason:"누적 확정",initiative:false};if(!eligible)return{chance:0,reason:"검세에 막힘 · 0%",initiative:false};const chance=cfg.baseChance+(opening?.result==="exploit"?cfg.exploitBonus:0);return{chance,reason:`연격 ${Math.round(chance*100)}%`,initiative:false};}
     planBasicChain(opening){const plan=this.previewBasicChain(opening),triggered=plan.chance>=1||plan.chance>0&&this.random()<plan.chance;this.basicChainChance=plan.chance;this.basicChainTriggered=triggered;if(plan.initiative)this.initiative=0;if(triggered)this.basicChainPity=0;else if(plan.chance>0)this.basicChainPity++;return{...plan,triggered,critBonus:plan.initiative?W.BASIC_CHAIN.initiativeCritBonus:0};}
+    clearBindReservation(){this.awaitingBind=false;this.bindEnemyChoice=null;this.bindPlayerChoice=null;this.bindOutcome=null;this.bindOpeningId=null;this.bindResolved=false;}
+    commitBindEnemyChoice(){
+      const recent=this.bindHistory.slice(-2);let choice;
+      if(recent.length===2&&recent.every(value=>value==="press"))choice="lure";
+      else if(recent.length===2&&recent.every(value=>value==="shift"))choice="guard";
+      else{const key=this.enemyConfig.id||"yama",index=this.bindAlternate[key]||0;choice=W.SWORD_BIND.enemyChoices[index%W.SWORD_BIND.enemyChoices.length];this.bindAlternate[key]=index+1;}
+      return choice;
+    }
+    canOpenSwordBind(r,opening){
+      const target=r?.b,phaseBlocked=this.phase?.transitionPending||this.turn==="transition"||this.enemyConfig.bossPhase&&!this.phase.active&&target?.hp/target?.maxHp<=W.BOSS_PHASE.threshold;
+      return this.runner===r&&r?.s?.id==="basic"&&!r.chain?.triggered&&!r.bindStarted&&opening?.result==="resisted"&&opening?.reactionType==="block"&&W.SWORD_BIND.eligibleOpenings.includes(opening.openingId)&&target===this.enemy&&target.hp>0&&target.poise>0&&!target.broken&&!target.breakPending&&target.down<=0&&!phaseBlocked;
+    }
+    openSwordBind(r,opening){
+      if(!this.canOpenSwordBind(r,opening))return false;const choice=this.commitBindEnemyChoice();this.awaitingBind=true;this.bindEnemyChoice=choice;this.bindPlayerChoice=null;this.bindOutcome=null;this.bindOpeningId=opening.openingId;this.bindResolved=false;opening.reactionShown=true;this.game.beginBindDisplay?.();
+      if(!r.startBind(choice)){this.clearBindReservation();return false;}this.game.updateUI();return true;
+    }
+    chooseSwordBind(choice){if(!this.awaitingBind||this.over||this.runner?.a!==this.player||!W.SWORD_BIND.choices[choice])return false;return this.runner.acceptBindChoice(choice);}
+    lockSwordBindChoice(r,choice){
+      if(!this.awaitingBind||this.runner!==r||this.bindPlayerChoice)return false;this.awaitingBind=false;this.bindPlayerChoice=choice;this.bindOutcome=choice==="recall"?"safe":choice==="press"?(this.bindEnemyChoice==="guard"?"win":"lose"):(this.bindEnemyChoice==="lure"?"win":"lose");
+      if(choice!=="recall"){this.bindHistory.push(choice);this.bindHistory=this.bindHistory.slice(-2);}this.enemyDefense.revealBind(this.bindEnemyChoice);this.game.showBindResult?.(this.bindEnemyChoice);this.audio.unlock();this.game.updateUI();return this.bindOutcome;
+    }
+    resolveSwordBind(r){
+      if(this.runner!==r||this.bindResolved||!this.bindPlayerChoice)return false;this.bindResolved=true;const cfg=W.SWORD_BIND,choice=this.bindPlayerChoice,outcome=this.bindOutcome;
+      if(choice==="press"&&outcome==="win"){
+        this.enemy.poise=Math.max(0,this.enemy.poise-cfg.pressPoiseDamage);this.effects.poise(this.enemy.x,this.enemy.y-92,cfg.pressPoiseDamage);this.effects.dust(this.player.x,this.player.y,this.player.side,10);const point=this.enemyDefense.active?.type==="bind"?this.enemyDefense.bindPoint():this.enemy.getTorsoPosition();this.effects.spark(point.x,point.y,"#f3d58a",18,1);this.camera.punch(this.player.side,9);this.callout("壓","중심을 눌렀다","bind");if(this.enemy.poise<=0&&!this.enemy.broken)this.breakPoise(this.enemy,this.player);
+      }else if(choice==="shift"&&outcome==="win"){
+        const opening=Object.values(this.enemyOpenings).find(item=>item?.id===this.bindOpeningId)||null,snapshot=W.evaluateOpening(opening,"THRUST",this.enemy.hp>0&&!this.enemy.broken);snapshot.feedbackShown=true;snapshot.reactionShown=true;const point=this.enemyDefense.active?.type==="bind"?this.enemyDefense.bindPoint():this.enemy.getTorsoPosition();this.effects.slash(point.x,point.y,-.42*this.player.side,"#d9fff4",108,.2);this.callout("變","칼길을 바꿨다","bind");this.hit(this.player,this.enemy,r.s,{openingSnapshot:snapshot,damageScale:cfg.shiftDamageScale,poiseScale:cfg.shiftPoiseScale,critChance:Math.min(1,this.player.crit+cfg.shiftCritBonus),multi:true,suppressDefense:true});
+      }else if(outcome==="lose"){
+        this.player.poise=Math.max(0,this.player.poise-cfg.lossPoiseDamage);this.effects.poise(this.player.x,this.player.y-92,cfg.lossPoiseDamage);const point=this.enemyDefense.active?.type==="bind"?this.enemyDefense.bindPoint():this.player.getTorsoPosition();this.effects.spark(point.x,point.y,"#e59b75",20,1.08);this.camera.punch(this.enemy.side,7);this.callout("制","수가 읽혔다","bind");if(this.player.poise<=0&&!this.player.broken)this.breakPoise(this.player,this.enemy);
+      }else this.callout("回","검을 거두었다","bind");
+      this.game.updateUI();return true;
+    }
     setEnemyIntent(skill){this.intent=skill||null;this.intentIndex=skill?this.enemySkills.indexOf(skill):0;if(skill?.feint){if(this.feintId!==skill.id||!this.branchCommitted)this.commitFeint(skill);}else this.clearFeintReservation();this.opening=W.openingForIntent(skill,this.enemyOpenings);this.enemy.setOpening(this.opening);return skill;}
     selectEnemyIntent(forceCycle=false){
       if(this.mujin)return this.mujin.sync();
@@ -83,7 +116,8 @@
       if(poiseHit>0&&!target.broken){target.poise=Math.max(0,target.poise-poiseHit);if(target.poise>0)this.effects.poise(target.x,target.y-92,poiseHit);}
       const terminal=target.hp<=0||target.poise<=0&&!target.broken;
       if(resisted&&firstReaction&&terminal)opening.reactionShown=true;
-      if(resisted&&!terminal)this.enemyDefense.start(target,attacker,opening);else target.react(opt.power||1,(opt.knock||0)*attacker.side,opt.down);
+      const bound=resisted&&!terminal&&opt.bindEligible&&this.openSwordBind(this.runner,opening);
+      if(!opt.suppressDefense){if(resisted&&!terminal&&!bound)this.enemyDefense.start(target,attacker,opening);else if(!bound)target.react(opt.power||1,(opt.knock||0)*attacker.side,opt.down);}
       if(target.hp<=0){this.enemyDefense.cancel(target);target.deadTime=.001;}
       if(opening?.matched&&!opening.feedbackShown){opening.feedbackShown=true;target.reactOpening?.();const torso=target.getTorsoPosition();this.effects.spark(torso.x,torso.y,"#f2cf72",18,1.05);this.audio.tone?.("sine",920,1280,.13,.055);if(target.poise<=0&&!target.broken)this.game.setMessage("허점 +50% 기세",700);else this.callout("破隙","허점 파훼","opening");}
       const showDamage=()=>this.effects.damage(target.x,target.y-130,amount,crit,opt.final,resisted,firstReaction);if(opt.delayNumber)this.defer(opt.delayNumber,showDamage);else showDamage();if(!resisted)this.effects.spark(target.getTorsoPosition().x,target.getTorsoPosition().y,crit?"#ffd586":"#eafff8",Math.round(8+(opt.power||1)*6),opt.power||1);
