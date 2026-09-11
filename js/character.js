@@ -13,6 +13,17 @@
     frontFoot:21,backFoot:-66,arm:-.66,elbow:.32,reach:.88,
     sword:-.4,swordPull:.38,offArm:2.66,offElbow:.14,cape:.52
   });
+  const mixPose=(a,b,t)=>{const out={};t=U.smooth(U.clamp(t,0,1));for(const key of Object.keys(Object.assign({},a,b)))out[key]=U.lerp(a[key]??0,b[key]??0,t);return out;};
+  const openingPose=id=>{
+    const poses={
+      crossGuard:{...basePose(),crouch:18,hipX:-10,torso:-.16,head:-.02,frontFoot:21,backFoot:-61,arm:-.48,elbow:.42,reach:.72,sword:-.42,swordPull:.18,offArm:2.42,offElbow:.22,cape:.32},
+      needlePoint:{...basePose(),crouch:14,hipX:8,torso:.13,head:.01,frontFoot:27,backFoot:-31,arm:-.04,elbow:.08,reach:.94,sword:-.01,swordPull:.35,offArm:.2,offElbow:.06,cape:-.18},
+      flowingShadow:{...basePose(),crouch:31,hipX:-18,torso:-.24,head:-.07,frontFoot:48,backFoot:-69,arm:.34,elbow:.34,reach:.68,sword:.58,offArm:2.72,offElbow:.18,cape:.68},
+      openGate:{...basePose(),crouch:11,hipX:-3,torso:.15,head:.06,frontFoot:39,backFoot:-43,arm:.72,elbow:.44,reach:.55,sword:.9,offArm:2.24,offElbow:.35,cape:.12},
+      ultimateCharge:{...salpungsePose(),crouch:39,hipX:-21,torso:-.34,head:-.1,frontFoot:15,backFoot:-73,arm:-.86,elbow:.46,reach:.72,sword:-.65,swordPull:.3,offArm:2.85,offElbow:.24,cape:.76}
+    };
+    return poses[id]||basePose();
+  };
 
   class Character {
     constructor(data, x, y) {
@@ -20,13 +31,18 @@
       this.hp=this.maxHp; this.mp=this.maxMp; this.x=x; this.y=y; this.baseX=x; this.baseY=y;
       this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;this.stance=null;
       this.pose=basePose(); this.poseOverride=null; this.time=Math.random()*4; this.hitTime=0; this.hitPower=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1;
+      this.openingId=null;this.openingFrom=basePose();this.openingBlend=1;this.openingReactTime=0;this.combatBusy=false;
     }
-    reset() { this.hp=this.maxHp; this.mp=this.maxMp;this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;this.stance=null;this.x=this.baseX; this.y=this.baseY; this.poseOverride=null; this.hitTime=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1; }
+    reset() { this.hp=this.maxHp; this.mp=this.maxMp;this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;this.stance=null;this.x=this.baseX; this.y=this.baseY; this.poseOverride=null; this.hitTime=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1;this.openingId=null;this.openingFrom=basePose();this.openingBlend=1;this.openingReactTime=0;this.combatBusy=false; }
     setPose(p) { this.poseOverride=Object.assign(basePose(),p||{}); }
     clearPose() { this.poseOverride=null; }
+    setOpening(opening) { const next=opening?.id||null;if(next===this.openingId)return;this.openingFrom=this.openingId?openingPose(this.openingId):(this.stance==="salpungse"?salpungsePose():basePose());this.openingId=next;this.openingBlend=0; }
+    reactOpening(){this.openingReactTime=.18;}
+    canUseOpeningPose(){return !!this.openingId&&!this.combatBusy&&!this.poseOverride&&!this.broken&&this.hp>0&&this.down<=0&&this.hitTime<=0;}
     react(power=1, knock=0, down=false) { this.hitTime=.24+power*.08; this.hitPower=power; this.knock+=knock; if(down)this.down=Math.max(this.down,1.35); }
-    update(dt, busy=false) {
+    update(dt, busy=false, combatBusy=busy) {
       this.time+=dt;
+      this.combatBusy=combatBusy;this.openingBlend=Math.min(1,this.openingBlend+dt/.22);this.openingReactTime=Math.max(0,this.openingReactTime-dt);
       if(this.hitTime>0)this.hitTime=Math.max(0,this.hitTime-dt);
       if(this.hp<=0)this.deadTime+=dt;else if(this.down>0)this.down=Math.max(0,this.down-dt);
       if(Math.abs(this.knock)>.1){this.x+=this.knock*dt;this.knock*=Math.pow(.045,dt);} else this.knock=0;
@@ -34,7 +50,8 @@
     }
     currentPose() {
       const phaseIdle=this.stance==="salpungse"&&!this.broken&&this.hp>0&&this.down<=0&&this.hitTime<=0;
-      const idle=phaseIdle?salpungsePose():basePose(), breath=Math.sin(this.time*2.15), shift=Math.sin(this.time*.83+1.4);
+      const baseIdle=phaseIdle?salpungsePose():basePose();
+      const idle=this.canUseOpeningPose()?mixPose(this.openingFrom,openingPose(this.openingId),this.openingBlend):baseIdle, breath=Math.sin(this.time*2.15), shift=Math.sin(this.time*.83+1.4);
       idle.crouch+=breath*2.2; idle.torso+=breath*.012+shift*.009; idle.sword+=Math.sin(this.time*1.7)*.012; idle.frontFoot+=Math.sin(this.time*.7)*1.5; idle.cape=Math.sin(this.time*1.2)*.12;
       const poiseRatio=this.poise/this.maxPoise,hpRatio=this.hp/this.maxHp;
       if(poiseRatio<.7){const strain=(.7-poiseRatio)/.7;idle.crouch+=strain*7;idle.torso-=strain*.055;idle.sword+=Math.sin(this.time*3.3)*.025*strain;idle.cape+=Math.sin(this.time*2.6)*.08*strain;}
@@ -43,6 +60,7 @@
       if(this.broken&&!this.poseOverride){idle.crouch+=22;idle.torso-=.25;idle.arm+=.45;idle.sword+=.55;idle.frontFoot-=9;}
       const p=this.poseOverride||idle;
       const out=Object.assign({},p);
+      if(this.openingReactTime>0&&!this.poseOverride){const q=Math.sin((this.openingReactTime/.18)*Math.PI);out.crouch+=5*q;out.hipX-=6*q;out.torso-=.11*q;out.arm+=.16*q;out.sword+=.22*q;out.frontFoot-=4*q;}
       if(this.hitTime>0){const q=this.hitTime/.5;out.torso-=this.hitPower*.14*Math.sin(q*Math.PI);out.head-=this.hitPower*.17*Math.sin(q*Math.PI);out.arm-=.18;}
       return out;
     }

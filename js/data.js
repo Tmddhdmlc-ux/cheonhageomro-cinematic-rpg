@@ -70,6 +70,47 @@
     }
   ];
 
+  W.ATTACK_TYPE_LABELS = {
+    SLASH: "베기", THRUST: "찌르기", MULTI: "연격", ULTIMATE: "오의"
+  };
+
+  W.ENEMY_OPENINGS = {
+    darkSlash: {
+      id: "crossGuard", name: "횡봉세", hanja: "橫封勢", weakTo: ["THRUST"],
+      damageMultiplier: 1.10, poiseMultiplier: 1.50
+    },
+    ghostThrust: {
+      id: "needlePoint", name: "직침세", hanja: "直針勢", weakTo: ["SLASH"],
+      damageMultiplier: 1.10, poiseMultiplier: 1.50
+    },
+    darkChain: {
+      id: "flowingShadow", name: "유영세", hanja: "流影勢", weakTo: ["MULTI"],
+      damageMultiplier: 1.10, poiseMultiplier: 1.50
+    },
+    darkBreath: {
+      id: "openGate", name: "기문개방", hanja: "氣門開放", weakTo: ["SLASH", "THRUST", "MULTI"],
+      damageMultiplier: 1.10, poiseMultiplier: 1.50
+    },
+    darkFall: {
+      id: "ultimateCharge", name: "절기축세", hanja: "絶技蓄勢", weakTo: ["SLASH", "THRUST", "MULTI"],
+      damageMultiplier: 1.00, poiseMultiplier: 1.50
+    }
+  };
+
+  W.openingForIntent = intent => W.ENEMY_OPENINGS[typeof intent === "string" ? intent : intent?.id] || null;
+  W.evaluateOpening = (opening, attackType) => {
+    const normal = ["SLASH", "THRUST", "MULTI"].includes(attackType);
+    const matched = !!opening && normal && opening.weakTo.includes(attackType);
+    return {
+      openingId: opening?.id || null,
+      attackType,
+      matched,
+      damageMultiplier: matched ? opening.damageMultiplier : 1,
+      poiseMultiplier: matched ? opening.poiseMultiplier : 1,
+      feedbackShown: false
+    };
+  };
+
   W.BOSS_PHASE = {
     threshold: .5,
     name: "살풍세",

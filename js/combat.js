@@ -4,12 +4,12 @@
   class Combat{
     constructor(game){
       this.game=game;this.camera=game.camera;this.effects=game.effects;this.audio=game.audio;this.player=game.player;this.enemy=game.enemy;
-      this.runner=null;this.turn="player";this.ai=true;this.slow=false;this.wait=0;this.hitStop=0;this.over=false;this.round=1;this.intent=null;this.intentIndex=0;this.deferred=[];
+      this.runner=null;this.turn="player";this.ai=true;this.slow=false;this.wait=0;this.hitStop=0;this.over=false;this.round=1;this.intent=null;this.intentIndex=0;this.opening=null;this.deferred=[];
       this.playerHabits={counter:0,evade:0,breathe:0};
       this.phase=new W.BossPhaseController(this);
     }
     reset(){
-      this.player.reset();this.enemy.reset();this.effects.clear();this.runner=null;this.hitStop=0;this.wait=0;this.deferred=[];this.over=false;this.round=1;this.playerHabits={counter:0,evade:0,breathe:0};
+      this.player.reset();this.enemy.reset();this.effects.clear();this.runner=null;this.hitStop=0;this.wait=0;this.deferred=[];this.over=false;this.round=1;this.intent=null;this.opening=null;this.playerHabits={counter:0,evade:0,breathe:0};
       this.phase.reset();this.game.shell.classList.remove?.("phase-transition");this.turn=this.player.speed>=this.enemy.speed?"player":"enemy";this.camera.reset(true);this.cinematic(false);this.selectEnemyIntent(true);this.game.updateUI();this.game.setMessage("비무를 시작합니다",850);if(this.turn==="enemy")this.wait=.7;
     }
     useSkill(id){
@@ -19,20 +19,21 @@
     useTactic(id){
       if(this.over||this.runner||this.turn!=="player")return false;const t=W.TACTICS.find(x=>x.id===id);if(!t)return false;this.audio.unlock();this.playerHabits[id]=(this.playerHabits[id]||0)+1;this.runner=new W.TacticRunner(this,this.player,this.enemy,t);this.game.updateUI();return true;
     }
+    setEnemyIntent(skill){this.intent=skill||null;this.intentIndex=skill?W.ENEMY_SKILLS.indexOf(skill):0;this.opening=W.openingForIntent(skill);this.enemy.setOpening(this.opening);return skill;}
     selectEnemyIntent(forceCycle=false){
       if(this.phase.active)return this.phase.syncIntent();
       const skills=W.ENEMY_SKILLS,e=this.enemy,p=this.player;
-      if(forceCycle&&this.intent){this.intentIndex=(this.intentIndex+1)%4;this.intent=skills[this.intentIndex];this.game.updateUI();return this.intent;}
+      if(forceCycle&&this.intent){this.intentIndex=(this.intentIndex+1)%4;this.setEnemyIntent(skills[this.intentIndex]);this.game.updateUI();return this.intent;}
       const weighted=[];
       const add=(id,w)=>{for(let i=0;i<Math.max(0,Math.round(w));i++)weighted.push(skills.find(s=>s.id===id));};
       add("darkSlash",4);add("darkChain",3+(this.playerHabits.evade||0)*.7);add("ghostThrust",2+(p.poise<38?4:0)+(this.playerHabits.counter||0)*1.4);
       if(e.hp/e.maxHp<=.4)add("darkFall",3+(this.playerHabits.evade||0)*1.3);
       if(e.poise<28)add("darkBreath",4);
-      this.intent=weighted[Math.floor(Math.random()*weighted.length)]||skills[0];this.intentIndex=skills.indexOf(this.intent);this.game.updateUI();return this.intent;
+      this.setEnemyIntent(weighted[Math.floor(Math.random()*weighted.length)]||skills[0]);this.game.updateUI();return this.intent;
     }
     forceIntent(){
       if(this.phase.active){const skill=this.phase.forceNext();if(skill)this.game.setMessage(`살풍세 ${this.phase.phaseStep}/4 · ${skill.name}`,700);return;}
-      this.intentIndex=(this.intentIndex+1)%4;this.intent=W.ENEMY_SKILLS[this.intentIndex];this.game.updateUI();this.game.setMessage(`다음 초식: ${this.intent.name}`,700);
+      this.intentIndex=(this.intentIndex+1)%W.ENEMY_SKILLS.length;this.setEnemyIntent(W.ENEMY_SKILLS[this.intentIndex]);this.game.updateUI();this.game.setMessage(`다음 초식: ${this.intent.name}`,700);
     }
     enemyAttack(){
       if(this.over||this.runner||!this.ai)return;
@@ -40,12 +41,15 @@
       const s=this.intent||this.selectEnemyIntent();this.phase.beforeEnemyAttack(s);this.runner=new W.EnemySkillRunner(this,this.enemy,this.player,s);this.game.updateUI();
     }
     hit(attacker,target,skill,opt={}){
-      const alreadyBroken=target.broken,range=skill.damage||[500,700],scale=opt.damageScale||1,atk=attacker.attack/100;
+      const opening=attacker===this.player&&target===this.enemy?opt.openingSnapshot:null;
+      const damageMultiplier=opening?.matched?opening.damageMultiplier:1,poiseMultiplier=opening?.matched?opening.poiseMultiplier:1;
+      const alreadyBroken=target.broken,range=skill.damage||[500,700],scale=(opt.damageScale||1)*damageMultiplier,atk=attacker.attack/100;
       const effectiveDefense=target.defense*(alreadyBroken ? .65 : 1),def=100/(100+effectiveDefense*.45),breakBonus=alreadyBroken?1.3:1;
       let amount=Math.round(U.rand(range[0],range[1])*atk*def*scale*breakBonus);const crit=Math.random()<attacker.crit;if(crit)amount=Math.round(amount*1.65);
       target.hp=Math.max(0,target.hp-amount);target.react(opt.power||1,(opt.knock||0)*attacker.side,opt.down);if(target.hp<=0)target.deadTime=.001;
-      const poiseHit=Math.max(0,Math.round((skill.poiseDamage||0)*(opt.poiseScale??1)));
+      const poiseHit=Math.max(0,Math.round((skill.poiseDamage||0)*(opt.poiseScale??1)*poiseMultiplier));
       if(poiseHit>0&&!target.broken){target.poise=Math.max(0,target.poise-poiseHit);if(target.poise>0)this.effects.poise(target.x,target.y-92,poiseHit);}
+      if(opening?.matched&&!opening.feedbackShown){opening.feedbackShown=true;target.reactOpening?.();const torso=target.getTorsoPosition();this.effects.spark(torso.x,torso.y,"#f2cf72",18,1.05);this.audio.tone?.("sine",920,1280,.13,.055);if(target.poise<=0&&!target.broken)this.game.setMessage("허점 +50% 기세",700);else this.callout("破隙","허점 파훼","opening");}
       const showDamage=()=>this.effects.damage(target.x,target.y-130,amount,crit,opt.final);if(opt.delayNumber)this.defer(opt.delayNumber,showDamage);else showDamage();this.effects.spark(target.getTorsoPosition().x,target.getTorsoPosition().y,crit?"#ffd586":"#eafff8",Math.round(8+(opt.power||1)*6),opt.power||1);
       this.audio.slash(!!opt.multi);this.audio.hit(opt.power||1,crit);this.hitStop=Math.max(this.hitStop,(opt.hitStop||.05)+(target.poise<=0&&!target.broken ? .035 : 0));
       if(target.poise<=0&&!target.broken)this.breakPoise(target,attacker);
@@ -62,7 +66,7 @@
     update(realDt){
       const rate=(this.slow?.36:1)*(this.cinematicRate||1);let dt=realDt*rate;this.camera.update(realDt);this.effects.update(realDt*(this.hitStop>0?.18:(this.slow?.55:1)));this.updateDeferred(realDt);
       if(this.hitStop>0){this.hitStop-=realDt;dt=0;}
-      const busy=!!this.runner;this.player.update(dt,busy&&this.runner.a===this.player);this.enemy.update(dt,busy&&this.runner.a===this.enemy);
+      const busy=!!this.runner;this.player.update(dt,busy&&this.runner.a===this.player,busy);this.enemy.update(dt,busy&&this.runner.a===this.enemy,busy);
       this.effects.trackSword(this.player,Math.max(realDt,.001),busy);this.effects.trackSword(this.enemy,Math.max(realDt,.001),busy);
       if(this.runner)this.runner.update(dt);else if(this.wait>0){this.wait-=dt;if(this.wait<=0&&this.turn==="enemy")this.enemyAttack();}
     }
