@@ -58,7 +58,7 @@
     },
     {
       id:"darkFall", name:"흑천낙검", hanja:"黑天落劍", attackType:"ULTIMATE", duration:2.48, damage:[1900,2450], poiseDamage:52,
-      intent:"공중 회전 후 광역 내려찍기", threat:"광역 내려찍기", responseHint:"파훼 불가 · 공격으로 파세 필요",
+      intent:"공중 회전 후 광역 내려찍기", threat:"광역 내려찍기", responseHint:"대응 전술 불가 · 공격으로 기세를 0까지 끊어라",
       responses:{
         counter:{outcome:"guardFail",reason:"착지 충격파가 반격 자세를 무너뜨렸습니다"},
         evade:{outcome:"evadeFail",reason:"착지 충격파의 범위를 벗어나지 못했습니다"}
@@ -69,6 +69,17 @@
       intent:"사기를 가다듬어 기세 회복", threat:"회복 행동", responseHint:"대응 불필요 · 회복 행동", responses:{}
     }
   ];
+
+  W.BOSS_PHASE = {
+    threshold: .5,
+    name: "살풍세",
+    hanja: "殺風勢",
+    duration: 1.62,
+    routes: {
+      counter: ["ghostThrust", "darkChain", "darkSlash", "darkFall"],
+      evade: ["darkSlash", "darkChain", "ghostThrust", "darkFall"]
+    }
+  };
 
   W.TACTICS = [
     { id:"breathe", key:"Q", name:"운기조식", hanja:"運氣調息", desc:"한 턴을 사용해 내력 +28, 기세 +20, HP를 소량 회복합니다." },

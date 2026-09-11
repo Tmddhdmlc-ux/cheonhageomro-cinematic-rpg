@@ -8,15 +8,20 @@
     arm: -.12, elbow: .22, reach: .72, sword: -.08, swordPull: 0,
     offArm: .38, offElbow: -.35, cape: 0, rootLift: 0, twist: 0
   });
+  const salpungsePose = () => ({
+    ...basePose(),crouch:28,hipX:-14,torso:-.22,head:-.04,
+    frontFoot:21,backFoot:-66,arm:-.66,elbow:.32,reach:.88,
+    sword:-.4,swordPull:.38,offArm:2.66,offElbow:.14,cape:.52
+  });
 
   class Character {
     constructor(data, x, y) {
       Object.assign(this, JSON.parse(JSON.stringify(data)));
       this.hp=this.maxHp; this.mp=this.maxMp; this.x=x; this.y=y; this.baseX=x; this.baseY=y;
-      this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;
+      this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;this.stance=null;
       this.pose=basePose(); this.poseOverride=null; this.time=Math.random()*4; this.hitTime=0; this.hitPower=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1;
     }
-    reset() { this.hp=this.maxHp; this.mp=this.maxMp;this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;this.x=this.baseX; this.y=this.baseY; this.poseOverride=null; this.hitTime=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1; }
+    reset() { this.hp=this.maxHp; this.mp=this.maxMp;this.poise=this.maxPoise;this.broken=false;this.breakPending=false;this.guard=null;this.stance=null;this.x=this.baseX; this.y=this.baseY; this.poseOverride=null; this.hitTime=0; this.knock=0; this.down=0;this.deadTime=0;this.alpha=1; }
     setPose(p) { this.poseOverride=Object.assign(basePose(),p||{}); }
     clearPose() { this.poseOverride=null; }
     react(power=1, knock=0, down=false) { this.hitTime=.24+power*.08; this.hitPower=power; this.knock+=knock; if(down)this.down=Math.max(this.down,1.35); }
@@ -28,7 +33,8 @@
       if(!busy && !this.poseOverride) this.x=U.lerp(this.x,this.baseX,1-Math.pow(.025,dt));
     }
     currentPose() {
-      const idle=basePose(), breath=Math.sin(this.time*2.15), shift=Math.sin(this.time*.83+1.4);
+      const phaseIdle=this.stance==="salpungse"&&!this.broken&&this.hp>0&&this.down<=0&&this.hitTime<=0;
+      const idle=phaseIdle?salpungsePose():basePose(), breath=Math.sin(this.time*2.15), shift=Math.sin(this.time*.83+1.4);
       idle.crouch+=breath*2.2; idle.torso+=breath*.012+shift*.009; idle.sword+=Math.sin(this.time*1.7)*.012; idle.frontFoot+=Math.sin(this.time*.7)*1.5; idle.cape=Math.sin(this.time*1.2)*.12;
       const poiseRatio=this.poise/this.maxPoise,hpRatio=this.hp/this.maxHp;
       if(poiseRatio<.7){const strain=(.7-poiseRatio)/.7;idle.crouch+=strain*7;idle.torso-=strain*.055;idle.sword+=Math.sin(this.time*3.3)*.025*strain;idle.cape+=Math.sin(this.time*2.6)*.08*strain;}
