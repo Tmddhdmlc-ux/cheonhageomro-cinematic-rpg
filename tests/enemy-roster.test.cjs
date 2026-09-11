@@ -14,11 +14,12 @@ function makeGame(config=W.ENEMIES.yama,mode="duel"){
   game.player=new W.Character(W.PLAYER_DATA,335,476);game.enemy=new W.Character(config.character,945,476);game.combat=new W.Combat(game);return game;
 }
 
-test("enemy registry exposes two distinct complete duel definitions",()=>{
-  assert.deepEqual(Object.keys(W.ENEMIES),["yama","mujin"]);
-  const yama=W.ENEMIES.yama,mujin=W.ENEMIES.mujin;
-  assert.notEqual(yama.character,mujin.character);assert.notEqual(yama.skills,mujin.skills);assert.notEqual(yama.openings,mujin.openings);assert.notEqual(yama.arenaId,mujin.arenaId);
+test("enemy registry exposes three distinct complete duel definitions",()=>{
+  assert.deepEqual(Object.keys(W.ENEMIES),["yama","mujin","baekrin"]);
+  const yama=W.ENEMIES.yama,mujin=W.ENEMIES.mujin,baekrin=W.ENEMIES.baekrin;
+  assert.notEqual(yama.character,mujin.character);assert.notEqual(yama.skills,mujin.skills);assert.notEqual(yama.openings,mujin.openings);assert.notEqual(yama.arenaId,mujin.arenaId);assert.notEqual(baekrin.character,mujin.character);assert.notEqual(baekrin.skills,mujin.skills);assert.notEqual(baekrin.arenaId,mujin.arenaId);
   assert.equal(yama.bossPhase,true);assert.equal(mujin.bossPhase,false);assert.equal(mujin.arenaId,"bluestoneGate");assert.equal(yama.ai.type,"yamaAdaptive");assert.equal(mujin.ai.type,"fixedCycle");assert.deepEqual(Array.from(mujin.ai.defaultOrder),["ironSweep","fallingPeak","ironFeint"]);assert.equal(W.ENEMY_DATA,yama.character);assert.equal(W.ENEMY_SKILLS,yama.skills);
+  assert.equal(baekrin.arenaId,"snowBridge");assert.equal(baekrin.ai.type,"baekrinCycle");assert.deepEqual(Array.from(baekrin.ai.order),["spearThrust","spearChain","spearSweep"]);assert.equal(baekrin.character.weaponStyle,"spear");
 });
 
 test("combat injects only the selected enemy skill and opening set",()=>{

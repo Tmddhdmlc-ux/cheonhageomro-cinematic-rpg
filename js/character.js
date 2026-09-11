@@ -18,7 +18,8 @@
     frontFoot:19,backFoot:-72,arm:.42,elbow:.38,reach:.64,
     sword:.62,swordPull:.08,offArm:.18,offElbow:.24,cape:.22
   });
-  const stancePose=stance=>stance==="salpungse"?salpungsePose():stance==="cheolsanse"?cheolsansePose():basePose();
+  const spearReadyPose = () => ({...basePose(),crouch:25,hipX:-14,torso:-.2,frontFoot:28,backFoot:-67,arm:-.18,elbow:.28,reach:.7,sword:-.08,offArm:.32,offElbow:.1,cape:.34});
+  const stancePose=stance=>stance==="salpungse"?salpungsePose():stance==="cheolsanse"?cheolsansePose():stance==="spearReady"?spearReadyPose():basePose();
   const mixPose=(a,b,t)=>{const out={};t=U.smooth(U.clamp(t,0,1));for(const key of Object.keys(Object.assign({},a,b)))out[key]=U.lerp(a[key]??0,b[key]??0,t);return out;};
   W.SWORD_BIND_POSES={
     playerBind:{...basePose(),crouch:22,hipX:8,torso:.16,frontFoot:55,backFoot:-51,arm:-.12,elbow:.08,reach:1,sword:-.18,swordPull:.38,offArm:.3,offElbow:.08,cape:-.22},
@@ -95,7 +96,7 @@
       const el={x:sh.x+Math.cos(armAngle)*43,y:sh.y+Math.sin(armAngle)*43};
       const handAngle=armAngle+p.elbow*(1-p.reach*.6);
       const hand={x:el.x+Math.cos(handAngle)*(38+20*p.reach),y:el.y+Math.sin(handAngle)*(38+20*p.reach)};
-      const weaponLength=this.weaponStyle==="heavySaber"?90:102,tip={x:hand.x+Math.cos(p.sword)*(weaponLength+p.swordPull*16),y:hand.y+Math.sin(p.sword)*(weaponLength+p.swordPull*16)};
+      const weaponLength=this.weaponStyle==="heavySaber"?90:this.weaponStyle==="spear"?150:102,tip={x:hand.x+Math.cos(p.sword)*(weaponLength+p.swordPull*16),y:hand.y+Math.sin(p.sword)*(weaponLength+p.swordPull*16)};
       const world=q=>({x:this.x+this.side*q.x,y:this.y+q.y});
       return{hip:world(hip),torso:world({x:(hip.x+shoulder.x)/2,y:(hip.y+shoulder.y)/2}),shoulder:world(shoulder),hand:world(hand),head:world(head),swordTip:world(tip)};
     }
@@ -153,9 +154,12 @@
       ctx.fillStyle=ghost?accent:"#c8b89b";ctx.beginPath();ctx.arc(hand.x,hand.y,5,0,TAU);ctx.fill();
 
       // Every weapon is coupled to the live hand and shares the collision tip API.
-      const sa=p.sword,weaponLength=s.weaponStyle==="heavySaber"?90:102,pom={x:hand.x-Math.cos(sa)*13,y:hand.y-Math.sin(sa)*13}, tip={x:hand.x+Math.cos(sa)*(weaponLength+p.swordPull*16),y:hand.y+Math.sin(sa)*(weaponLength+p.swordPull*16)};
+      const sa=p.sword,weaponLength=s.weaponStyle==="heavySaber"?90:s.weaponStyle==="spear"?150:102,pom={x:hand.x-Math.cos(sa)*13,y:hand.y-Math.sin(sa)*13}, tip={x:hand.x+Math.cos(sa)*(weaponLength+p.swordPull*16),y:hand.y+Math.sin(sa)*(weaponLength+p.swordPull*16)};
       ctx.shadowColor=accent;ctx.shadowBlur=ghost?14:5;
-      if(s.weaponStyle==="heavySaber"){
+      if(s.weaponStyle==="spear"){
+        ctx.strokeStyle=ghost?accent:"#b9c4c8";ctx.lineWidth=ghost?4:3;ctx.beginPath();ctx.moveTo(pom.x,pom.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        const nx=-Math.sin(sa),ny=Math.cos(sa),baseX=tip.x-Math.cos(sa)*28,baseY=tip.y-Math.sin(sa)*28;ctx.fillStyle=ghost?accent:"#d9f5ff";ctx.strokeStyle=ghost?accent:"#6e9baa";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(tip.x,tip.y);ctx.lineTo(baseX+nx*8,baseY+ny*8);ctx.lineTo(baseX-nx*8,baseY-ny*8);ctx.closePath();ctx.fill();ctx.stroke();
+      }else if(s.weaponStyle==="heavySaber"){
         const nx=-Math.sin(sa),ny=Math.cos(sa),bladeStart={x:hand.x+Math.cos(sa)*10,y:hand.y+Math.sin(sa)*10},wide=ghost?7:10;
         ctx.fillStyle=ghost?accent:"#303a3d";ctx.strokeStyle=ghost?accent:"#0b1113";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bladeStart.x+nx*wide,bladeStart.y+ny*wide);ctx.lineTo(tip.x+nx*3,tip.y+ny*3);ctx.lineTo(tip.x,tip.y);ctx.lineTo(bladeStart.x-nx*(wide*.65),bladeStart.y-ny*(wide*.65));ctx.closePath();ctx.fill();ctx.stroke();
         ctx.strokeStyle=ghost?accent:"#c7e3e5";ctx.lineWidth=ghost?3:2.4;ctx.beginPath();ctx.moveTo(bladeStart.x-nx*(wide*.45),bladeStart.y-ny*(wide*.45));ctx.lineTo(tip.x,tip.y);ctx.stroke();

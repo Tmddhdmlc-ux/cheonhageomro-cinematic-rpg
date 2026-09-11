@@ -31,6 +31,12 @@
     ironDrive:{...base(),crouch:29,hipX:26,torso:.28,head:.05,frontFoot:62,backFoot:-30,backLift:5,arm:-.18,elbow:.08,reach:.94,sword:-.15,swordPull:.28,offArm:-.12,offElbow:.08,cape:-.38},
     ironFeint:{...base(),crouch:45,hipX:-29,torso:-.34,head:-.07,frontFoot:5,backFoot:-88,arm:-.88,elbow:.46,reach:.57,sword:-.93,swordPull:.06,offArm:-.62,offElbow:.3,cape:.3},
     ironRecover:{...base(),crouch:35,hipX:-18,torso:-.18,frontFoot:16,backFoot:-72,arm:.72,elbow:.4,reach:.48,sword:.98,offArm:.38,offElbow:.18,cape:.18}
+    ,spearLoad:{...base(),crouch:42,hipX:-28,torso:-.32,frontFoot:10,backFoot:-78,arm:-.12,elbow:.42,reach:.5,sword:-.04,offArm:.18,offElbow:.25,cape:.55}
+    ,spearDrive:{...base(),crouch:9,hipX:31,torso:.34,frontFoot:86,backFoot:-5,backLift:10,arm:-.02,elbow:.02,reach:1,sword:-.01,swordPull:1,offArm:.02,offElbow:.04,cape:-1.18}
+    ,spearFlowA:{...base(),crouch:22,hipX:-5,torso:-.28,frontFoot:48,backFoot:-58,arm:-1.05,elbow:.3,reach:.74,sword:-1.1,offArm:2.7,offElbow:.12,cape:.62}
+    ,spearFlowB:{...base(),crouch:17,hipX:18,torso:.26,frontFoot:72,backFoot:-26,arm:.72,elbow:.08,reach:.95,sword:.74,offArm:.2,offElbow:.08,cape:-.62}
+    ,spearSweep:{...base(),crouch:18,hipX:25,torso:.38,frontFoot:76,backFoot:-20,arm:.38,elbow:.04,reach:1,sword:.38,offArm:.08,offElbow:.08,cape:-.86}
+    ,spearRecover:{...base(),crouch:37,hipX:-18,torso:-.2,frontFoot:15,backFoot:-72,arm:.9,elbow:.35,reach:.4,sword:1.57,offArm:.38,offElbow:.18,cape:.18}
   };
 
   class TacticRunner{
@@ -206,6 +212,19 @@
       this.a.setPose(t<.3?mix(base(),POSES.ironRecover,ph(t,0,.3)):t<.76?POSES.ironRecover:mix(POSES.ironRecover,base(),ph(t,.76,1.05)));
       if(t>.5)this.once("recover",()=>{this.a.poise=Math.min(this.a.maxPoise,this.a.poise+28);this.c.audio.charge();this.c.effects.dust(this.a.x,this.a.y,this.a.side,8);this.c.game.setMessage("무진이 철산의 중심을 다시 세웁니다",900);this.c.game.updateUI();});
     }
+    spearThrust(t){
+      if(t<.48)this.pose(base(),POSES.spearLoad,0,.48);else if(t<.82){this.pose(POSES.spearLoad,POSES.spearDrive,.48,.82);this.a.x=U.lerp(this.ax,this.bx-this.aside*112,U.ease(ph(t,.48,.82)));this.once("dash",()=>this.c.audio.dash());}else if(t<1.02)this.a.setPose(POSES.spearDrive);else{this.pose(POSES.spearDrive,base(),1.02,1.34);this.a.x=U.lerp(this.a.x,this.ax,U.ease(ph(t,1.02,1.34)));}
+      if(t>=.76)this.once("hit",()=>{this.c.effects.shockwave(this.b.x,this.b.y-105,"#b9ecff",90,.28);this.impact({hitStop:.095,power:1.25,knock:175,final:true});this.c.camera.shake(18,.2);});
+    }
+    spearChain(t){
+      if(t<.38)this.pose(base(),POSES.spearFlowA,0,.38);else if(t<.7){this.pose(POSES.spearFlowA,POSES.spearFlowB,.38,.7);this.a.x=U.lerp(this.ax,this.bx-this.aside*145,U.ease(ph(t,.38,.7)));}else if(t<1.42){const q=(t-.7)% .36/.36,idx=Math.floor((t-.7)/.36);this.a.setPose(mix(idx%2?POSES.spearFlowB:POSES.spearFlowA,idx%2?POSES.spearFlowA:POSES.spearFlowB,q));this.a.x=this.bx-this.aside*(idx%2?118:152);}else{this.pose(POSES.spearFlowB,base(),1.42,1.86);this.a.x=U.lerp(this.a.x,this.ax,U.ease(ph(t,1.42,1.86)));}
+      [.62,.98,1.34].forEach((at,i)=>{if(t>=at)this.once("hit"+i,()=>{if(i===0&&["parry","evade"].includes(this.outcome)){this.impact({});return;}if(i>0&&["parry","evade"].includes(this.outcome))return;this.c.effects.slash(this.b.x,this.b.y-105,i===1?.7:-.55,"#bdefff",120,.22);this.impact({hitStop:.045,power:.6,knock:32,damageScale:i===2?1.1:.42,poiseScale:i===2?.42:.25,multi:true});});});
+    }
+    spearSweep(t){
+      if(t<.36)this.pose(base(),POSES.spearLoad,0,.36);else if(t<.68){this.pose(POSES.spearLoad,POSES.spearSweep,.36,.68);this.a.x=U.lerp(this.ax,this.bx-this.aside*145,U.ease(ph(t,.36,.68)));}else if(t<.86)this.a.setPose(POSES.spearSweep);else{this.pose(POSES.spearSweep,base(),.86,1.16);this.a.x=U.lerp(this.a.x,this.ax,U.ease(ph(t,.86,1.16)));}
+      if(t>=.64)this.once("hit",()=>{if(this.outcome==="guardFail")this.failedClash();this.c.effects.slash(this.b.x,this.b.y-105,.35,"#d8f6ff",175,.3);this.impact({hitStop:.1,power:1.15,knock:145,final:true});this.c.camera.shake(20,.22);});
+    }
+    snowRecover(t){this.a.setPose(t<.24?mix(base(),POSES.spearRecover,ph(t,0,.24)):t<.7?POSES.spearRecover:mix(POSES.spearRecover,base(),ph(t,.7,.92)));if(t>.45)this.once("recover",()=>{this.a.poise=Math.min(this.a.maxPoise,this.a.poise+24);this.c.audio.charge();this.c.effects.dust(this.a.x,this.a.y,this.a.side,8);this.c.game.setMessage("백린이 창을 세우고 기세를 되찾습니다",850);this.c.game.updateUI();});}
     darkFall(t){
       if(t<.38)this.pose(base(),POSES.darkWind,0,.38);
       else if(t<.95){const q=U.ease(ph(t,.38,.95));this.a.setPose(mix(POSES.darkWind,POSES.darkJump,q));this.a.y=this.ay-360*q;this.a.x=this.ax+this.aside*55*q;this.c.camera.follow(this.a,1.2);}

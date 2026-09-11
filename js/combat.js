@@ -12,11 +12,12 @@
       this.bindHistory=[];this.bindAlternate={yama:0,mujin:0};this.clearBindReservation();
       this.phase=new W.BossPhaseController(this);
       this.mujin=this.enemyConfig.ai?.type==="fixedCycle"&&W.MujinIntentController?new W.MujinIntentController(this):null;
+      this.baekrin=this.enemyConfig.ai?.type==="baekrinCycle"&&W.BaekrinIntentController?new W.BaekrinIntentController(this):null;
       this.enemyDefense=new W.EnemyDefenseController(this);
     }
     reset(){
       this.enemyDefense.cancel();this.player.reset();this.enemy.reset();this.effects.clear();this.runner=null;this.hitStop=0;this.wait=0;this.deferred=[];this.over=false;this.round=1;this.intent=null;this.opening=null;this.playerHabits={counter:0,evade:0,breathe:0};this.clearMindgameState();
-      this.phase.reset();this.mujin?.reset();this.game.shell.classList.remove?.("phase-transition");this.turn=this.player.speed>=this.enemy.speed?"player":"enemy";this.camera.reset(true);this.cinematic(false);this.selectEnemyIntent(true);this.game.updateUI();this.game.setMessage("비무를 시작합니다",850);if(this.turn==="enemy")this.wait=.7;
+      this.phase.reset();this.mujin?.reset();this.baekrin?.reset();this.game.shell.classList.remove?.("phase-transition");this.turn=this.player.speed>=this.enemy.speed?"player":"enemy";this.camera.reset(true);this.cinematic(false);this.selectEnemyIntent(true);this.game.updateUI();this.game.setMessage("비무를 시작합니다",850);if(this.turn==="enemy")this.wait=.7;
     }
     dispose(){this.enemyDefense.cancel();this.runner?.a?.clearPose?.();this.runner?.b?.clearPose?.();this.runner=null;this.deferred=[];this.wait=0;this.hitStop=0;this.over=true;this.turn="inactive";this.clearMindgameState();this.effects.clear();this.camera.release?.();this.camera.reset(true);this.cinematic(false);}
     useSkill(id){
@@ -83,6 +84,7 @@
     setEnemyIntent(skill){this.intent=skill||null;this.intentIndex=skill?this.enemySkills.indexOf(skill):0;if(skill?.feint){if(this.feintId!==skill.id||!this.branchCommitted)this.commitFeint(skill);}else this.clearFeintReservation();this.opening=W.openingForIntent(skill,this.enemyOpenings);this.enemy.setOpening(this.opening);return skill;}
     selectEnemyIntent(forceCycle=false){
       if(this.mujin)return this.mujin.sync();
+      if(this.baekrin)return this.baekrin.sync();
       if(this.phase.active)return this.phase.syncIntent();
       const skills=this.enemySkills,e=this.enemy,p=this.player;
       if(forceCycle&&this.intent){this.intentIndex=(this.intentIndex+1)%4;this.setEnemyIntent(skills[this.intentIndex]);this.game.updateUI();return this.intent;}
@@ -96,6 +98,7 @@
     forceIntent(){
       if(this.game.mode&&this.game.mode!=="duel")return false;
       if(this.mujin){const skill=this.mujin.forceNext();if(skill)this.game.setMessage(`${this.mujin.label} · ${skill.name}`,700);return skill;}
+      if(this.baekrin){const skill=this.baekrin.forceNext();if(skill)this.game.setMessage(`${this.baekrin.label} · ${skill.name}`,700);return skill;}
       if(this.phase.active){const skill=this.phase.forceNext();if(skill)this.game.setMessage(`살풍세 ${this.phase.phaseStep}/4 · ${skill.name}`,700);return;}
       this.intentIndex=(this.intentIndex+1)%this.enemySkills.length;this.setEnemyIntent(this.enemySkills[this.intentIndex]);this.game.updateUI();this.game.setMessage(`다음 초식: ${this.intent.name}`,700);
     }
@@ -103,7 +106,7 @@
       if(this.over||this.runner||!this.ai)return;
       this.enemyDefense.cancel(this.enemy);this.player.guard=null;
       if(this.enemy.broken){this.enemy.broken=false;this.enemy.poise=Math.max(42,this.enemy.poise);}
-      this.mujin?.prepareNext();const s=this.intent||this.selectEnemyIntent();this.phase.beforeEnemyAttack(s);this.runner=new W.EnemySkillRunner(this,this.enemy,this.player,s);this.game.updateUI();
+      this.mujin?.prepareNext();this.baekrin?.prepareNext();const s=this.intent||this.selectEnemyIntent();this.phase.beforeEnemyAttack(s);this.runner=new W.EnemySkillRunner(this,this.enemy,this.player,s);this.game.updateUI();
     }
     hit(attacker,target,skill,opt={}){
       const opening=attacker===this.player&&target===this.enemy?opt.openingSnapshot:null;
@@ -155,7 +158,7 @@
         else{this.turn="player";this.player.mp=Math.min(this.player.maxMp,this.player.mp+7);}
       }else{
         if(!this.enemy.broken&&!r.s?.skipPassivePoiseRecovery)this.enemy.poise=Math.min(this.enemy.maxPoise,this.enemy.poise+this.enemy.poiseRecovery);
-        if(this.mujin)this.mujin.advanceAfter(r.s);else if(this.phase.active)this.phase.advanceAfterEnemySkill(r.s);
+        if(this.mujin)this.mujin.advanceAfter(r.s);else if(this.baekrin)this.baekrin.advanceAfter(r.s);else if(this.phase.active)this.phase.advanceAfterEnemySkill(r.s);
         if(r.b.breakPending){r.b.breakPending=false;this.turn="enemy";this.wait=.62;this.game.setMessage(this.enemyConfig.breakMessage||"파세 위기 · 적의 연격",900);}
         else{this.turn="player";this.player.mp=Math.min(this.player.maxMp,this.player.mp+12);this.player.poise=Math.min(this.player.maxPoise,this.player.poise+this.player.poiseRecovery);this.round++;this.selectEnemyIntent();}
       }
