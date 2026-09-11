@@ -20,13 +20,14 @@
       this.phase.reset();this.mujin?.reset();this.baekrin?.reset();this.game.shell.classList.remove?.("phase-transition");this.turn=this.player.speed>=this.enemy.speed?"player":"enemy";this.camera.reset(true);this.cinematic(false);this.selectEnemyIntent(true);this.game.updateUI();this.game.setMessage("비무를 시작합니다",850);if(this.turn==="enemy")this.wait=.7;
     }
     dispose(){this.enemyDefense.cancel();this.runner?.a?.clearPose?.();this.runner?.b?.clearPose?.();this.runner=null;this.deferred=[];this.wait=0;this.hitStop=0;this.over=true;this.turn="inactive";this.clearMindgameState();this.effects.clear();this.camera.release?.();this.camera.reset(true);this.cinematic(false);}
+    isCombatMode(){return !this.game.mode||this.game.mode==="duel"||this.game.mode==="campaign";}
     useSkill(id){
-      if((this.game.mode&&this.game.mode!=="duel")||this.over||this.runner||this.turn!=="player")return false;const s=W.SKILLS.find(x=>x.id===id);if(!s)return false;if(this.player.mp<s.cost){this.game.setMessage("내력이 부족합니다",800);this.audio.tone("square",90,70,.12,.08);return false;}
+      if(!this.isCombatMode()||this.over||this.runner||this.turn!=="player")return false;const s=W.SKILLS.find(x=>x.id===id);if(!s)return false;if(this.player.mp<s.cost){this.game.setMessage("내력이 부족합니다",800);this.audio.tone("square",90,70,.12,.08);return false;}
       this.audio.unlock();this.player.mp-=s.cost;if(id!=="basic")this.basicChainTriggered=false;this.runner=new W.SkillRunner(this,this.player,this.enemy,s);this.game.updateUI();return true;
     }
     useTactic(id){
       if(id==="counter"||id==="evade")return this.chooseResponse(id);
-      if((this.game.mode&&this.game.mode!=="duel")||this.over||this.runner||this.turn!=="player"||id!=="breathe")return false;const t=W.TACTICS.find(x=>x.id===id);if(!t)return false;this.audio.unlock();this.playerHabits.breathe++;this.runner=new W.TacticRunner(this,this.player,this.enemy,t);this.game.updateUI();return true;
+      if(!this.isCombatMode()||this.over||this.runner||this.turn!=="player"||id!=="breathe")return false;const t=W.TACTICS.find(x=>x.id===id);if(!t)return false;this.audio.unlock();this.playerHabits.breathe++;this.runner=new W.TacticRunner(this,this.player,this.enemy,t);this.game.updateUI();return true;
     }
     clearMindgameState(){this.awaitingResponse=false;this.responseSkillId=null;this.selectedResponse=null;this.resolvedOutcome=null;this.initiative=0;this.basicChainPity=0;this.basicChainChance=W.BASIC_CHAIN.baseChance;this.basicChainTriggered=false;this.responseHistory=[];this.feintAlternate={yama:0,mujin:0};this.clearFeintReservation();this.bindHistory=[];this.bindAlternate={yama:0,mujin:0};this.clearBindReservation();this.player.guard=null;}
     clearFeintReservation(){this.feintArmed=false;this.feintId=null;this.feintBranch=null;this.branchReason=null;this.branchCommitted=false;this.feintRevealed=false;}
@@ -96,7 +97,7 @@
       this.setEnemyIntent(weighted[Math.floor(Math.random()*weighted.length)]||skills[0]);this.game.updateUI();return this.intent;
     }
     forceIntent(){
-      if(this.game.mode&&this.game.mode!=="duel")return false;
+      if(!this.isCombatMode())return false;
       if(this.mujin){const skill=this.mujin.forceNext();if(skill)this.game.setMessage(`${this.mujin.label} · ${skill.name}`,700);return skill;}
       if(this.baekrin){const skill=this.baekrin.forceNext();if(skill)this.game.setMessage(`${this.baekrin.label} · ${skill.name}`,700);return skill;}
       if(this.phase.active){const skill=this.phase.forceNext();if(skill)this.game.setMessage(`살풍세 ${this.phase.phaseStep}/4 · ${skill.name}`,700);return;}

@@ -27,9 +27,12 @@
             <i>麟</i><span class="difficulty">정예 · 설죽잔도</span><strong>빙설창객 백린</strong><b>氷雪槍客 白麟</b><em>장창 · 냉정한 거리 · 고정 3수</em>
           </button>
         </div>
+        <button id="start-campaign" class="campaign-start" type="button"><strong>천하행 · 3연전</strong><span>염라 → 무진 → 백린을 연속으로 상대합니다 · 전투 사이 자원이 일부 회복됩니다</span></button>
         <footer>← → 상대 선택 · ENTER 비무 시작</footer>
       </div>
     </section>
+
+    <aside id="campaign-intermission" class="campaign-intermission" aria-live="assertive" aria-hidden="true"><small id="campaign-intermission-kicker">天下行 · INTERMISSION</small><strong id="campaign-intermission-title">1라운드 승리 · 다음 비무 준비</strong><span id="campaign-intermission-next"></span><em id="campaign-intermission-recovery"></em></aside>
 
     <section id="duel-result" class="result-panel" aria-live="polite" aria-hidden="true">
       <small id="result-kicker">比武 終了</small><strong id="result-title">승부가 끝났습니다</strong><span id="result-opponent"></span>
@@ -49,6 +52,7 @@
       </div>
 
       <div id="turn-orb"><span>PLAYER</span><b>你的回合</b></div>
+      <span id="campaign-badge" aria-hidden="true"></span>
 
       <div class="status-card enemy-card">
         <div class="status-copy">
@@ -126,6 +130,6 @@
   <script src="js/skills.js?v=0.10.0"></script>
   <script src="js/defense.js?v=0.10.0"></script>
   <script src="js/combat.js?v=0.10.0"></script>
-  <script src="js/main.js?v=0.10.0"></script>
+  <script src="js/main.js?v=0.12.0"></script>
 </body>
 </html>
