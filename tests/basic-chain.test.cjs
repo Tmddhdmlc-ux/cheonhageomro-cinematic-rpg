@@ -5,8 +5,8 @@ const test=require("node:test");
 const vm=require("node:vm");
 
 const root=path.resolve(__dirname,"..");
-const context=vm.createContext({console,setTimeout(){},clearTimeout(){},document:{getElementById(){return{parentElement:{classList:{add(){},remove(){}}}};}}});context.window=context;
-for(const file of ["js/data.js","js/character.js","js/enemy-defense.js","js/boss-phase.js","js/mujin.js","js/skills.js","js/defense.js","js/combat.js"])vm.runInContext(fs.readFileSync(path.join(root,file),"utf8"),context,{filename:file});
+const context=vm.createContext({console,setTimeout(){},clearTimeout(){},document:{getElementById(){return null;}}});context.window=context;
+for(const file of ["js/data.js","js/character.js","js/enemy-defense.js","js/boss-phase.js","js/mujin.js","js/skills.js","js/defense.js","js/combat.js","js/main.js"])vm.runInContext(fs.readFileSync(path.join(root,file),"utf8"),context,{filename:file});
 const W=context.Wuxia,noop=()=>{};
 
 function makeGame(){
@@ -40,4 +40,10 @@ test("first-hit death cancels the second hit while first-hit poise break does no
 
 test("combat hit applies second-hit damage, poise, and independent injected critical chance once",()=>{
   const game=makeGame(),c=game.combat,target=game.enemy,skill={damage:[1000,1000],poiseDamage:20};game.player.attack=100;target.defense=0;target.hp=5000;target.poise=100;c.random=()=>.27;c.hit(game.player,target,skill,{damageScale:.55,poiseScale:.5,critChance:.28});assert.equal(target.hp,4092);assert.equal(target.poise,90);
+});
+
+test("an open basic tooltip refreshes after initiative, pity, and opening changes",()=>{
+  const game=makeGame(),c=game.combat,basic=W.SKILLS[0],ui=Object.create(W.Game.prototype);c.opening=W.ENEMY_OPENINGS.darkBreath;c.turn="player";ui.mode="duel";ui.combat=c;ui.enemy=game.enemy;ui.el={tooltip:{innerHTML:"",style:{display:"block"}}};ui.hoveredTip=basic;c.initiative=1;ui.refreshTip();assert.match(ui.el.tooltip.innerHTML,/선기 확정/);assert.match(ui.el.tooltip.innerHTML,/2타 치명 \+20%p/);
+  c.planBasicChain(ui.openingResult(basic));ui.refreshTip();assert.match(ui.el.tooltip.innerHTML,/연격 50%/);assert.doesNotMatch(ui.el.tooltip.innerHTML,/선기 확정|2타 치명 \+20%p/);
+  c.basicChainPity=2;ui.refreshTip();assert.match(ui.el.tooltip.innerHTML,/누적 확정/);c.opening=W.ENEMY_OPENINGS.darkSlash;ui.refreshTip();assert.match(ui.el.tooltip.innerHTML,/검세에 막힘 · 0%/);assert.doesNotMatch(ui.el.tooltip.innerHTML,/누적 확정/);
 });
