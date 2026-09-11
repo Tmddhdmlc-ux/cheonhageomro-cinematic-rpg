@@ -21,7 +21,14 @@
     ghostDrive:{...base(),crouch:7,hipX:30,torso:.5,frontFoot:84,backFoot:-3,backLift:12,arm:-.02,elbow:.01,reach:1,sword:-.01,swordPull:1,offArm:.02,offElbow:.02,cape:-1.25},
     darkJump:{...base(),crouch:2,rootLift:0,frontFoot:18,backFoot:-18,frontLift:25,backLift:30,torso:.15,arm:-1.7,elbow:.08,reach:1,sword:-1.72,offArm:-1.3,offElbow:.1,cape:-.85},
     darkDive:{...base(),crouch:3,frontFoot:28,backFoot:-20,frontLift:18,backLift:20,torso:.48,arm:1.2,elbow:.03,reach:1,sword:1.25,swordPull:1,offArm:.9,offElbow:.15,cape:-1.2},
-    darkLand:{...base(),crouch:48,hipX:18,frontFoot:62,backFoot:-45,torso:.5,arm:1.25,elbow:.02,reach:1,sword:1.28,swordPull:1,offArm:.9,offElbow:.2,cape:-1.1}
+    darkLand:{...base(),crouch:48,hipX:18,frontFoot:62,backFoot:-45,torso:.5,arm:1.25,elbow:.02,reach:1,sword:1.28,swordPull:1,offArm:.9,offElbow:.2,cape:-1.1},
+    ironLoad:{...base(),crouch:38,hipX:-27,torso:-.42,head:-.08,frontFoot:7,backFoot:-86,arm:-1.02,elbow:.52,reach:.56,sword:-1.14,offArm:-.76,offElbow:.34,cape:.4},
+    ironSweep:{...base(),crouch:25,hipX:25,torso:.42,frontFoot:70,backFoot:-34,arm:.28,elbow:.06,reach:1,sword:.34,swordPull:.55,offArm:.12,offElbow:.08,cape:-.52},
+    peakGather:{...base(),crouch:49,hipX:-18,torso:-.25,head:-.08,frontFoot:11,backFoot:-79,arm:-1.48,elbow:.28,reach:.9,sword:-1.5,swordPull:.2,offArm:-1.2,offElbow:.18,cape:.32},
+    peakStrike:{...base(),crouch:30,hipX:22,torso:.48,head:.08,frontFoot:68,backFoot:-42,arm:1.38,elbow:.02,reach:1,sword:1.42,swordPull:.72,offArm:1.12,offElbow:.08,cape:-.7},
+    ironWall:{...base(),crouch:44,hipX:-24,torso:-.38,head:-.08,frontFoot:4,backFoot:-78,arm:-.58,elbow:.2,reach:.82,sword:-.56,swordPull:.08,offArm:-.5,offElbow:.18,cape:.16},
+    ironDrive:{...base(),crouch:29,hipX:26,torso:.28,head:.05,frontFoot:62,backFoot:-30,backLift:5,arm:-.18,elbow:.08,reach:.94,sword:-.15,swordPull:.28,offArm:-.12,offElbow:.08,cape:-.38},
+    ironRecover:{...base(),crouch:35,hipX:-18,torso:-.18,frontFoot:16,backFoot:-72,arm:.72,elbow:.4,reach:.48,sword:.98,offArm:.38,offElbow:.18,cape:.18}
   };
 
   class TacticRunner{
@@ -41,7 +48,7 @@
   }
 
   class EnemySkillRunner{
-    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;this.guard=target.guard;this.startPoise=target.poise;this.failureReason="";this.responseRule=null;this.outcome=this.resolveOutcome();this.c.showSkillTitle(skill);if(skill.id==="darkFall")this.c.cinematic(true);}
+    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.heavy=!!skill.heavy;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;this.guard=target.guard;this.startPoise=target.poise;this.failureReason="";this.responseRule=null;this.outcome=this.resolveOutcome();this.c.showSkillTitle(skill);if(skill.id==="darkFall")this.c.cinematic(true);}
     once(id,fn){if(!this.events.has(id)){this.events.add(id);fn();}}
     resolveOutcome(){
       if(!this.guard||this.s.attackType==="RECOVER")return"hit";
@@ -56,6 +63,7 @@
       return rule.outcome;
     }
     pose(a,b,x,y){this.a.setPose(mix(a,b,ph(this.t,x,y)));}
+    clashPose(){return this.s.id==="fallingPeak"?POSES.peakStrike:this.s.id==="ironAdvance"?POSES.ironDrive:this.heavy?POSES.ironSweep:POSES.darkSlash;}
     update(dt){this.t+=dt;(this[this.s.id]||this.darkSlash).call(this,this.t);if(this.t>=this.s.duration)this.finish();}
     impact(opt={}){
       this.b.guard=null;
@@ -68,9 +76,9 @@
     }
     parry(){
       this.once("parry",()=>{
-        this.b.setPose(POSES.guard);this.a.setPose({...POSES.darkSlash,sword:-.55,arm:-.47});
+        this.b.setPose(POSES.guard);this.a.setPose(this.heavy?this.clashPose():{...POSES.darkSlash,sword:-.55,arm:-.47});
         let at=this.a.getSwordTip(),bt=this.b.getSwordTip();this.a.x+=bt.x-at.x;at=this.a.getSwordTip();const clash={x:(at.x+bt.x)/2,y:(at.y+bt.y)/2};
-        this.c.hitStop=Math.max(this.c.hitStop,.11);this.c.camera.focusBetween(this.a,this.b,1.28);this.c.camera.punch(this.aside,14);this.c.camera.shake(18,.22);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#fff0b2",32,1.4);this.c.effects.shockwave(clash.x,clash.y,"#fff1c4",72,.3);this.c.callout("破招","파훼","parry");
+        this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.145:.11);this.c.camera.focusBetween(this.a,this.b,this.heavy?1.2:1.28);this.c.camera.punch(this.aside,this.heavy?18:14);this.c.camera.shake(this.heavy?22:18,this.heavy?.27:.22);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#fff0b2",this.heavy?38:32,this.heavy?1.65:1.4);this.c.effects.shockwave(clash.x,clash.y,"#fff1c4",this.heavy?88:72,this.heavy?.36:.3);this.c.callout("破招","파훼","parry");
         if(this.responseRule?.poiseCost){const cost=this.responseRule.poiseCost;this.b.poise=Math.max(1,this.b.poise-cost);this.c.effects.poise(this.b.x,this.b.y-98,cost,"cost");this.c.game.updateUI();}
         this.c.defer(.2,()=>{this.b.setPose(POSES.counter);this.c.effects.slash(this.a.getTorsoPosition().x,this.a.getTorsoPosition().y,.15,"#dffff6",125,.22);this.c.hit(this.b,this.a,{damage:[430,570],poiseDamage:18},{hitStop:.07,power:.8,knock:95,final:false});});
       });
@@ -79,7 +87,7 @@
       this.once("evade",()=>{this.c.effects.afterimage(this.b,.3);this.b.x-=this.b.side*105;this.b.setPose({...POSES.evade,rootLift:9});this.c.audio.dash();this.c.camera.focusBetween(this.a,this.b,1.13);this.c.callout("回避","회피","evade");});
     }
     failedClash(){
-      this.once("failedClash",()=>{this.b.setPose(POSES.guard);this.a.setPose({...POSES.darkSlash,sword:-.55,arm:-.47});let at=this.a.getSwordTip(),bt=this.b.getSwordTip();this.a.x+=bt.x-at.x;at=this.a.getSwordTip();const clash={x:(at.x+bt.x)/2,y:(at.y+bt.y)/2};this.c.hitStop=Math.max(this.c.hitStop,.085);this.c.camera.focusBetween(this.a,this.b,1.2);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#ffd6b0",20,1.05);this.c.effects.shockwave(clash.x,clash.y,"#ffd0aa",52,.24);});
+      this.once("failedClash",()=>{this.b.setPose(POSES.guard);this.a.setPose(this.heavy?this.clashPose():{...POSES.darkSlash,sword:-.55,arm:-.47});let at=this.a.getSwordTip(),bt=this.b.getSwordTip();this.a.x+=bt.x-at.x;at=this.a.getSwordTip();const clash={x:(at.x+bt.x)/2,y:(at.y+bt.y)/2};this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.12:.085);this.c.camera.focusBetween(this.a,this.b,1.2);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#ffd6b0",this.heavy?28:20,this.heavy?1.35:1.05);this.c.effects.shockwave(clash.x,clash.y,"#ffd0aa",this.heavy?70:52,this.heavy?.3:.24);});
     }
     trackedEvade(){
       this.once("trackedEvade",()=>{this.c.effects.afterimage(this.b,.28);this.c.audio.dash();this.c.camera.focusBetween(this.a,this.b,1.12);});
@@ -128,6 +136,45 @@
       }
       const hitAt=this.outcome==="guardFail"?.8:.75;
       if(t>=hitAt)this.once("hit",()=>{if(this.outcome!=="evade")this.c.effects.shockwave(this.b.x,this.b.y-105,"#ffb0a5",105,.3);this.impact({hitStop:.095,power:1.35,knock:185,final:true});this.c.camera.punch(this.aside,20);});
+    }
+    ironSweep(t){
+      const evadeEnd=this.bx-this.b.side*96,guardEnd=this.bx-this.b.side*38;
+      if(this.outcome==="evadeFail"){
+        if(t<.64){this.b.x=U.lerp(this.bx,evadeEnd,U.ease(ph(t,.2,.6)));this.b.setPose(mix(POSES.evade,POSES.evadeCaught,ph(t,.36,.64)));if(t>=.22)this.trackedEvade();}
+        else if(t<1.02){this.b.x=evadeEnd;this.b.setPose(POSES.evadeCaught);}else{this.b.x=U.lerp(evadeEnd,this.bx,U.ease(ph(t,1.02,1.42)));this.b.setPose(mix(POSES.evadeCaught,base(),ph(t,1.02,1.42)));}
+      }else if(this.outcome==="guardFail"){
+        if(t<.72)this.b.setPose(POSES.guard);else if(t<1.03){this.b.x=U.lerp(this.bx,guardEnd,U.ease(ph(t,.72,.92)));this.b.setPose(mix(POSES.guard,POSES.overwhelmed,ph(t,.68,.94)));}else{this.b.x=U.lerp(guardEnd,this.bx,U.ease(ph(t,1.03,1.42)));this.b.setPose(mix(POSES.overwhelmed,base(),ph(t,1.03,1.42)));}
+      }
+      if(t<.46)this.pose(base(),POSES.ironLoad,0,.46);
+      else if(t<.84){this.pose(POSES.ironLoad,POSES.ironSweep,.46,.84);this.a.x=U.lerp(this.ax,(this.outcome==="evadeFail"?evadeEnd:this.bx)-this.aside*142,U.ease(ph(t,.46,.84)));}
+      else if(t<1.02)this.a.setPose(POSES.ironSweep);else{this.pose(POSES.ironSweep,base(),1.02,1.45);this.a.x=U.lerp(this.a.x,this.ax,U.ease(ph(t,1.02,1.45)));}
+      if(t>=.8)this.once("hit",()=>{if(this.outcome==="guardFail")this.failedClash();if(this.outcome!=="parry")this.c.effects.slash(this.b.x,this.b.y-78,.2,"#d8e7df",165,.3);this.impact({hitStop:.12,power:1.25,knock:165,final:true});this.c.camera.shake(18,.22);});
+    }
+    fallingPeak(t){
+      if(this.outcome==="guardFail"){
+        if(t<.7)this.b.setPose(POSES.guard);else if(t<1.18)this.b.setPose(mix(POSES.guard,POSES.impactCollapse,ph(t,.7,1.02)));else this.b.setPose(mix(POSES.impactCollapse,base(),ph(t,1.18,1.72)));
+      }
+      if(t<.62)this.pose(base(),POSES.peakGather,0,.62);
+      else if(t<1.02){this.pose(POSES.peakGather,POSES.peakStrike,.62,1.02);this.a.x=U.lerp(this.ax,this.bx-this.aside*108,U.ease(ph(t,.62,1.02)));}
+      else if(t<1.2)this.a.setPose(POSES.peakStrike);else{this.pose(POSES.peakStrike,base(),1.2,1.75);this.a.x=U.lerp(this.a.x,this.ax,U.ease(ph(t,1.2,1.75)));}
+      if(t>=1)this.once("hit",()=>{const groundX=this.bx,groundY=this.by-5;if(this.outcome==="guardFail")this.failedClash();this.c.effects.slash(groundX,groundY-70,1.48,"#dbe8e2",178,.34);this.c.effects.shockwave(groundX,groundY,"#b9c9c3",158,.48);this.c.effects.dust(groundX,groundY,1,22);this.impact({hitStop:.145,power:1.7,knock:210,down:this.outcome!=="evade",final:true});this.c.camera.shake(27,.34);});
+    }
+    ironAdvance(t){
+      const evadeEnd=this.bx-this.b.side*92,crushEnd=this.bx-this.b.side*45;
+      if(this.outcome==="evadeFail"){
+        if(t<.62){this.b.x=U.lerp(this.bx,evadeEnd,U.ease(ph(t,.22,.52)));this.b.setPose(mix(POSES.evade,POSES.evadeCaught,ph(t,.34,.62)));if(t>=.22)this.trackedEvade();}else if(t<.92){this.b.x=U.lerp(evadeEnd,crushEnd,U.ease(ph(t,.62,.88)));this.b.setPose(POSES.overwhelmed);}else{this.b.x=U.lerp(crushEnd,this.bx,U.ease(ph(t,.92,1.26)));this.b.setPose(mix(POSES.overwhelmed,base(),ph(t,.92,1.26)));}
+      }else if(this.outcome==="guardFail"){
+        if(t<.62)this.b.setPose(POSES.guard);else if(t<.93){this.b.x=U.lerp(this.bx,crushEnd,U.ease(ph(t,.62,.86)));this.b.setPose(mix(POSES.guard,POSES.impactCollapse,ph(t,.58,.88)));}else{this.b.x=U.lerp(crushEnd,this.bx,U.ease(ph(t,.93,1.26)));this.b.setPose(mix(POSES.impactCollapse,base(),ph(t,.93,1.26)));}
+      }
+      if(t<.38)this.pose(base(),POSES.ironWall,0,.38);
+      else if(t<.72){this.pose(POSES.ironWall,POSES.ironDrive,.38,.72);const target=this.outcome==="evadeFail"?crushEnd:this.bx;this.a.x=U.lerp(this.ax,target-this.aside*126,U.ease(ph(t,.38,.72)));this.once("driveDust",()=>this.c.effects.dust(this.ax,this.ay,this.aside,14));}
+      else if(t<.9)this.a.setPose(POSES.ironDrive);else{this.pose(POSES.ironDrive,base(),.9,1.28);this.a.x=U.lerp(this.a.x,this.ax,U.ease(ph(t,.9,1.28)));}
+      if(t>=.7)this.once("hit",()=>{if(this.outcome==="guardFail")this.failedClash();this.c.effects.shockwave(this.b.x,this.b.y-92,"#b7d4d6",105,.32);this.impact({hitStop:.125,power:1.45,knock:120,final:true});this.c.camera.punch(this.aside,18);});
+      if(t>=.84)this.once("pommel",()=>{if(!["parry","evade"].includes(this.outcome))this.c.effects.spark(this.b.x,this.b.y-112,"#a9cbd0",10,.6);});
+    }
+    ironBreath(t){
+      this.a.setPose(t<.3?mix(base(),POSES.ironRecover,ph(t,0,.3)):t<.76?POSES.ironRecover:mix(POSES.ironRecover,base(),ph(t,.76,1.05)));
+      if(t>.5)this.once("recover",()=>{this.a.poise=Math.min(this.a.maxPoise,this.a.poise+28);this.c.audio.charge();this.c.effects.dust(this.a.x,this.a.y,this.a.side,8);this.c.game.setMessage("무진이 철산의 중심을 다시 세웁니다",900);this.c.game.updateUI();});
     }
     darkFall(t){
       if(t<.38)this.pose(base(),POSES.darkWind,0,.38);

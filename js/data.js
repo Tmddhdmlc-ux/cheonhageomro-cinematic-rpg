@@ -70,8 +70,39 @@
     }
   ];
 
+  W.MUJIN_SKILLS = [
+    {
+      id:"ironSweep", name:"철산횡도", hanja:"鐵山橫刀", attackType:"SLASH", duration:1.45, damage:[720,900], poiseDamage:28, heavy:true,
+      intent:"뒷발과 허리를 감는 낮은 횡도", threat:"묵직한 기세 압박", responseHint:"반격세: 기세 65+ · 유운보 실패",
+      responses:{
+        counter:{outcome:"parry",minPoise:65,poiseCost:25,failureOutcome:"guardFail",reason:"기세가 부족해 중도의 무게에 눌렸습니다"},
+        evade:{outcome:"evadeFail",reason:"넓은 횡궤적이 보법의 끝을 잡았습니다"}
+      }
+    },
+    {
+      id:"fallingPeak", name:"낙봉개산", hanja:"落峰開山", attackType:"HEAVY", duration:1.75, damage:[1120,1380], poiseDamage:46, heavy:true,
+      intent:"낮춘 골반에서 시작하는 수직 내려베기", threat:"매우 높은 기세 피해", responseHint:"권장: 유운보 · 반격세 실패",
+      responses:{
+        counter:{outcome:"guardFail",reason:"도의 무게가 검과 무릎을 함께 눌렀습니다"},
+        evade:{outcome:"evade"}
+      }
+    },
+    {
+      id:"ironAdvance", name:"철벽진", hanja:"鐵壁進", attackType:"IMPACT", duration:1.28, damage:[650,820], poiseDamage:52, heavy:true,
+      intent:"도면과 어깨를 붙인 짧은 전진", threat:"최고 기세 피해", responseHint:"반격세: 기세 45+ · 유운보 실패",
+      responses:{
+        counter:{outcome:"parry",minPoise:45,poiseCost:15,failureOutcome:"guardFail",reason:"기세가 부족해 도면의 전진을 비틀지 못했습니다"},
+        evade:{outcome:"evadeFail",reason:"무진이 짧게 방향을 고쳐 보법을 추적했습니다"}
+      }
+    },
+    {
+      id:"ironBreath", name:"철산가세", hanja:"鐵山架勢", attackType:"RECOVER", duration:1.05, damage:[0,0], poiseDamage:0, heavy:true, skipPassivePoiseRecovery:true,
+      intent:"도끝을 낮추고 뒷발과 골반을 다시 세움", threat:"기세 회복", responseHint:"공격 기회 · 모든 일반 초식 유효", responses:{}
+    }
+  ];
+
   W.ATTACK_TYPE_LABELS = {
-    SLASH: "베기", THRUST: "찌르기", MULTI: "연격", ULTIMATE: "오의"
+    SLASH: "베기", THRUST: "찌르기", MULTI: "연격", HEAVY:"중격", IMPACT:"충격", RECOVER:"조식", ULTIMATE: "오의"
   };
   W.OPENING_MULTIPLIERS = {
     exploit: { damage: 1.10, poise: 1.50 },
@@ -102,7 +133,15 @@
     }
   };
 
-  W.openingForIntent = intent => W.ENEMY_OPENINGS[typeof intent === "string" ? intent : intent?.id] || null;
+  W.MUJIN_OPENINGS = {
+    ironSweep:{id:"middleGateSweep",name:"중문횡도",hanja:"中門橫刀",weakTo:["THRUST"],resists:["SLASH"],reactionType:"block",damageMultiplier:1.10,poiseMultiplier:1.50},
+    fallingPeak:{id:"raisedSaber",name:"거도상세",hanja:"擧刀上勢",weakTo:["SLASH"],resists:["THRUST"],reactionType:"deflect",damageMultiplier:1.10,poiseMultiplier:1.50},
+    ironAdvance:{id:"ironWallClose",name:"철벽근세",hanja:"鐵壁近勢",weakTo:["MULTI"],resists:["SLASH","THRUST"],reactionType:"block",damageMultiplier:1.10,poiseMultiplier:1.50},
+    ironBreath:null
+  };
+  W.MUJIN_OPENINGS.ironBreath=W.ENEMY_OPENINGS.darkBreath;
+
+  W.openingForIntent = (intent, openings=W.ENEMY_OPENINGS) => openings?.[typeof intent === "string" ? intent : intent?.id] || null;
   W.evaluateOpening = (opening, attackType, active = true) => {
     const normal = ["SLASH", "THRUST", "MULTI"].includes(attackType);
     let result="neutral";
@@ -146,6 +185,28 @@
   W.ENEMY_DATA = {
     name: "흑풍검 염라", maxHp: 16800, maxMp: 80, attack: 96, defense: 72,
     crit: 0.12, speed: 98, maxPoise: 100, poiseRecovery: 10, side: -1, color: "#c9b4ad", accent: "#dc5749"
+  };
+  W.MUJIN_DATA = {
+    name:"철산도객 무진", hanja:"鐵山刀客 武震", maxHp:13200, maxMp:60, attack:102, defense:86,
+    crit:.08, speed:86, maxPoise:130, poiseRecovery:8, side:-1, color:"#928a70", darkColor:"#353b3c", accent:"#9fc7cf",
+    weaponStyle:"heavySaber", bodyScale:1.1, idleStance:"cheolsanse"
+  };
+
+  W.ARENAS = {
+    moonSummit:{id:"moonSummit",name:"월하 산정 비무장"},
+    bluestoneGate:{id:"bluestoneGate",name:"청석관문"}
+  };
+  W.ENEMIES = {
+    yama:{
+      id:"yama",name:"흑풍검 염라",hanja:"黑風劍 閻羅",title:"쾌검 · 변칙 · 살풍세 2페이즈",traits:["쾌검","변칙","살풍세"],difficulty:"보스",arenaId:"moonSummit",arenaName:"월하 산정 비무장",
+      character:W.ENEMY_DATA,skills:W.ENEMY_SKILLS,openings:W.ENEMY_OPENINGS,aiType:"yama",ai:{type:"yamaAdaptive"},bossPhase:true,badge:"1식",
+      victoryMessage:"승리 — 검로가 열렸습니다",defeatMessage:"패배 — 호흡을 가다듬으십시오",breakMessage:"파세 위기 · 염라의 연격"
+    },
+    mujin:{
+      id:"mujin",name:"철산도객 무진",hanja:"鐵山刀客 武震",title:"중도 · 기세 압박 · 묵직한 고정 패턴",traits:["중도","기세 압박","고정 3수"],difficulty:"정예",arenaId:"bluestoneGate",arenaName:"청석관문",
+      character:W.MUJIN_DATA,skills:W.MUJIN_SKILLS,openings:W.MUJIN_OPENINGS,aiType:"mujin",ai:{type:"fixedCycle",defaultOrder:["ironSweep","fallingPeak","ironAdvance"],pressureOrder:["ironAdvance","ironSweep","fallingPeak"],recoveryThreshold:35,pressureThreshold:40},bossPhase:false,badge:"정예 · 철산도",
+      victoryMessage:"승리 — 철산의 문이 열렸습니다",defeatMessage:"패배 — 무거운 도세를 다시 읽으십시오",breakMessage:"파세 위기 · 무진의 중도 압박"
+    }
   };
 
   W.util = {
