@@ -167,6 +167,14 @@
   };
   W.MUJIN_OPENINGS.ironBreath=W.ENEMY_OPENINGS.darkBreath;
 
+  W.BAEKRIN_SKILLS = [
+    {id:"spearThrust",name:"설맥직관",hanja:"雪脈直貫",attackType:"THRUST",duration:1.34,responseCue:.47,damage:[880,1120],poiseDamage:34,weaponStyle:"spear",intent:"뒷발을 고정하고 중심선을 꿰뚫는 창끝",threat:"직선 기세 압박",responseHint:"권장: 유운보",responses:{counter:{outcome:"guardFail",reason:"창끝이 반격선 안쪽을 찔렀습니다"},evade:{outcome:"evade"}}},
+    {id:"spearChain",name:"연빙쇄창",hanja:"連氷鎖槍",attackType:"MULTI",duration:1.86,responseCue:.56,damage:[260,340],poiseDamage:25,weaponStyle:"spear",intent:"두 번 회수한 창대가 세 번째 중심을 닫습니다",threat:"연속 창격",responseHint:"반격세: 기세 52+",responses:{counter:{outcome:"parry",minPoise:52,poiseCost:18,failureOutcome:"guardFail",reason:"기세가 부족해 연빙쇄를 끊지 못했습니다"},evade:{outcome:"evadeFail",reason:"겹친 창날이 보법의 끝을 잡았습니다"}}},
+    {id:"spearSweep",name:"설화횡류",hanja:"雪花橫流",attackType:"SLASH",duration:1.16,responseCue:.36,damage:[670,860],poiseDamage:20,weaponStyle:"spear",intent:"창대가 큰 원호를 그리며 보법의 끝을 잡습니다",threat:"넓은 횡격",responseHint:"반격세: 기세 42+",responses:{counter:{outcome:"parry",minPoise:42,poiseCost:14,failureOutcome:"guardFail",reason:"기세가 부족해 설화의 원호에 밀렸습니다"},evade:{outcome:"evadeFail",reason:"창끝의 원호가 회피선을 따라붙었습니다"}}},
+    {id:"snowRecover",name:"설원토납",hanja:"雪原吐納",attackType:"RECOVER",duration:.92,damage:[0,0],poiseDamage:0,weaponStyle:"spear",intent:"창을 세워 숨을 고르고 기세를 되찾습니다",threat:"기세 회복",responseHint:"공격 기회 · 응수 불필요",responses:{}}
+  ];
+  W.BAEKRIN_OPENINGS = {spearThrust:{...W.ENEMY_OPENINGS.ghostThrust,id:"needlePoint"},spearChain:{...W.ENEMY_OPENINGS.darkChain,id:"flowingShadow"},spearSweep:{...W.ENEMY_OPENINGS.darkSlash,id:"crossGuard"},snowRecover:{...W.ENEMY_OPENINGS.darkBreath,id:"openGate"}};
+
   W.openingForIntent = (intent, openings=W.ENEMY_OPENINGS) => openings?.[typeof intent === "string" ? intent : intent?.id] || null;
   W.evaluateOpening = (opening, attackType, active = true) => {
     const normal = ["SLASH", "THRUST", "MULTI"].includes(attackType);
@@ -217,10 +225,12 @@
     crit:.08, speed:86, maxPoise:130, poiseRecovery:8, side:-1, color:"#928a70", darkColor:"#353b3c", accent:"#9fc7cf",
     weaponStyle:"heavySaber", bodyScale:1.1, idleStance:"cheolsanse"
   };
+  W.BAEKRIN_DATA = {id:"baekrin",name:"빙설창객 백린",hanja:"氷雪槍客 白麟",maxHp:14600,maxMp:70,attack:100,defense:70,crit:.10,speed:104,maxPoise:115,poiseRecovery:9,side:-1,color:"#b9d7e4",darkColor:"#29414b",accent:"#8bd5ef",weaponStyle:"spear",idleStance:"spearReady"};
 
   W.ARENAS = {
     moonSummit:{id:"moonSummit",name:"월하 산정 비무장"},
-    bluestoneGate:{id:"bluestoneGate",name:"청석관문"}
+    bluestoneGate:{id:"bluestoneGate",name:"청석관문"},
+    snowBridge:{id:"snowBridge",name:"설죽잔도"}
   };
   W.ENEMIES = {
     yama:{
@@ -232,6 +242,9 @@
       id:"mujin",name:"철산도객 무진",hanja:"鐵山刀客 武震",title:"중도 · 기세 압박 · 묵직한 고정 패턴",traits:["중도","기세 압박","고정 3수"],difficulty:"정예",arenaId:"bluestoneGate",arenaName:"청석관문",
       character:W.MUJIN_DATA,skills:W.MUJIN_SKILLS,openings:W.MUJIN_OPENINGS,aiType:"mujin",ai:{type:"fixedCycle",defaultOrder:["ironSweep","fallingPeak","ironFeint"],pressureOrder:["ironAdvance","ironSweep","ironFeint"],recoveryThreshold:35,pressureThreshold:40},bossPhase:false,badge:"정예 · 철산도",
       victoryMessage:"승리 — 철산의 문이 열렸습니다",defeatMessage:"패배 — 무거운 도세를 다시 읽으십시오",breakMessage:"파세 위기 · 무진의 중도 압박"
+    },
+    baekrin:{
+      id:"baekrin",name:"빙설창객 백린",hanja:"氷雪槍客 白麟",title:"장창 · 냉정한 거리 · 고정 3수",traits:["장창","설원","고정 3수"],difficulty:"정예",arenaId:"snowBridge",arenaName:"설죽잔도",character:W.BAEKRIN_DATA,skills:W.BAEKRIN_SKILLS,openings:W.BAEKRIN_OPENINGS,aiType:"baekrin",ai:{type:"baekrinCycle",order:["spearThrust","spearChain","spearSweep"],recoveryThreshold:32},bossPhase:false,badge:"설원창 · 1/3",victoryMessage:"승리 — 설원에 창끝이 멎었습니다",defeatMessage:"패배 — 창끝의 거리를 다시 읽으십시오",breakMessage:"파세 위기 · 백린의 연빙쇄"
     }
   };
 
