@@ -8,6 +8,8 @@
     idle: W.basePose(),
     basicWind:{crouch:16,hipX:-9,torso:-.13,frontFoot:25,backFoot:-50,arm:-1.05,elbow:.65,reach:.45,sword:-1.18,offArm:-.25,offElbow:.5,cape:.2},
     basicHit:{crouch:5,hipX:15,torso:.18,frontFoot:57,backFoot:-28,arm:.08,elbow:.03,reach:1,sword:.13,offArm:.12,offElbow:.15,cape:-.4},
+    basicChainWind:{crouch:22,hipX:-16,torso:-.3,frontFoot:38,backFoot:-54,arm:.82,elbow:.22,reach:.72,sword:.9,offArm:-.4,offElbow:.28,cape:.62},
+    basicChainHit:{crouch:8,hipX:19,torso:.29,frontFoot:66,backFoot:-22,backLift:5,arm:-.48,elbow:.03,reach:1,sword:-.56,offArm:.22,offElbow:.08,cape:-.72},
     meteorCharge:{crouch:31,hipX:-15,torso:-.2,frontFoot:24,backFoot:-58,arm:2.8,elbow:.35,reach:.48,sword:3.02,offArm:2.55,offElbow:.2,cape:.5},
     meteorDash:{crouch:13,hipX:18,torso:.38,frontFoot:72,backFoot:-15,backLift:14,arm:-.05,elbow:.02,reach:1,sword:-.04,swordPull:1,offArm:.1,offElbow:.05,cape:-.9},
     plumReady:{crouch:26,hipX:-10,torso:-.22,frontFoot:21,backFoot:-58,arm:-1.45,elbow:.55,reach:.55,sword:-1.58,offArm:-.8,offElbow:.4,cape:.45},
@@ -23,7 +25,7 @@
   };
 
   class SkillRunner{
-    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;const active=target===combat.enemy&&target.hp>0&&!target.broken&&!!combat.opening;this.opening=W.evaluateOpening(combat.opening,skill.attackType,active);this.setup();}
+    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;const active=target===combat.enemy&&target.hp>0&&!target.broken&&!!combat.opening;this.opening=W.evaluateOpening(combat.opening,skill.attackType,active);this.chain=skill.id==="basic"&&combat.planBasicChain?combat.planBasicChain(this.opening):{triggered:false,initiative:false,critBonus:0,reason:"연격 25%"};this.duration=this.chain.triggered?W.BASIC_CHAIN.duration:skill.duration;this.setup();}
     once(id,fn){if(!this.events.has(id)){this.events.add(id);fn();}}
     setup(){
       this.a.clearPose();
@@ -31,15 +33,20 @@
       if(this.s.id==="plum")this.c.camera.pan(this.ax,this.ay-105,1.14);
       if(this.s.id==="thunder"){this.c.cinematic(true);this.c.camera.pan(this.ax,this.ay-120,1.42);this.c.audio.charge();}
     }
-    update(dt){this.t+=dt;const fn=this[this.s.id]||this.basic;fn.call(this,this.t);if(this.t>=this.s.duration)this.finish();}
+    update(dt){this.t+=dt;const fn=this[this.s.id]||this.basic;fn.call(this,this.t);if(!this.done&&this.t>=this.duration)this.finish();}
     fxHit(opts={}){this.c.hit(this.a,this.b,this.s,{...opts,openingSnapshot:this.opening});}
     poseSegment(a,b,x,y){this.a.setPose(mix(a,b,phase(this.t,x,y)));}
     basic(t){
       if(t<.14)this.poseSegment(P.idle,P.basicWind,0,.14);
       else if(t<.31){this.poseSegment(P.basicWind,P.basicHit,.14,.31);this.a.x=U.lerp(this.ax,this.bx-this.aside*165,U.ease(phase(t,.14,.31)));this.once("dash",()=>{this.c.audio.dash();this.c.effects.dust(this.ax,this.ay,this.aside,6);});}
-      else if(t<.45)this.poseSegment(P.basicHit,Object.assign({},P.basicHit,{torso:.28,sword:.3,frontFoot:64}),.31,.45);
-      else {this.poseSegment(P.basicHit,P.idle,.45,.72);this.a.x=U.lerp(this.a.x,this.ax,U.ease(phase(t,.45,.72)));}
-      if(t>=.29)this.once("hit",()=>{this.c.effects.slash(this.b.x,this.b.y-103,.12,"#d9fff5",115,.2);this.fxHit({hitStop:.055,power:.75,knock:70});});
+      else if(!this.chain.triggered&&t<.45)this.poseSegment(P.basicHit,Object.assign({},P.basicHit,{torso:.28,sword:.3,frontFoot:64}),.31,.45);
+      else if(!this.chain.triggered){this.poseSegment(P.basicHit,P.idle,.45,.72);this.a.x=U.lerp(this.a.x,this.ax,U.ease(phase(t,.45,.72)));}
+      else if(t<.48)this.poseSegment(P.basicHit,P.basicChainWind,.31,.48);
+      else if(t<.7){this.poseSegment(P.basicChainWind,P.basicChainHit,.48,.7);this.a.x=U.lerp(this.a.x,this.bx-this.aside*145,U.ease(phase(t,.48,.7)));}
+      else if(t<.8)this.a.setPose(P.basicChainHit);
+      else{this.poseSegment(P.basicChainHit,P.idle,.8,W.BASIC_CHAIN.duration);this.a.x=U.lerp(this.a.x,this.ax,U.ease(phase(t,.8,W.BASIC_CHAIN.duration)));}
+      if(t>=.29)this.once("hit",()=>{this.c.effects.slash(this.b.x,this.b.y-103,.12,"#d9fff5",115,.2);this.fxHit({hitStop:.055,power:.75,knock:70});if(this.b.hp<=0)this.finish();});
+      if(!this.done&&this.chain.triggered&&t>=.69)this.once("chainHit",()=>{this.c.game.setMessage(this.chain.initiative?"先機連斬":"연격",620);this.c.effects.slash(this.b.x,this.b.y-105,-.48,"#c9f5ed",92,.18);this.fxHit({hitStop:.052,power:.68,knock:55,damageScale:W.BASIC_CHAIN.damageScale,poiseScale:W.BASIC_CHAIN.poiseScale,critChance:Math.min(1,this.a.crit+this.chain.critBonus),multi:true});});
     }
     meteor(t){
       if(t<.2)this.poseSegment(P.idle,P.meteorCharge,0,.2);
