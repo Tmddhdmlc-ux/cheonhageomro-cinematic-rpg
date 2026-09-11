@@ -143,12 +143,14 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 #enemy-intent strong { display:block;color:#e0c7b6;font:700 20px/1.1 serif;letter-spacing:.12em;margin-top:3px; }
 #enemy-intent b { display:block;font:700 12px serif;letter-spacing:.1em; }
 #enemy-intent span { display:block;color:#8e9794;font-size:8px;margin-top:3px; }
+#enemy-intent #intent-response { color:#e0c27c;font-weight:800;letter-spacing:.04em; }
 #game-shell.cinematic #enemy-intent { opacity:0;transform:translateY(-8px); }
 
 #combat-callout { position:absolute;left:50%;top:28%;transform:translate(-50%,-12px) scale(.9);opacity:0;text-align:center;pointer-events:none;color:#f2e8ce;text-shadow:0 4px 12px #000; }
 #combat-callout.show { animation:callout 1.05s ease both; }
 #combat-callout strong { display:block;font:900 62px/1 serif;letter-spacing:.16em;font-family:serif; }
 #combat-callout span { display:block;margin-top:3px;color:#c9ba7e;font:700 13px serif;letter-spacing:.4em; }
+#combat-callout.break span { max-width:720px;white-space:nowrap;letter-spacing:.06em; }
 #combat-callout.parry strong { color:#edddad; }
 #combat-callout.break strong { color:#ffd4a4; }
 #combat-callout.evade strong { color:#c9f4e9; }

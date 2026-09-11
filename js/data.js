@@ -32,17 +32,48 @@
   ];
 
   W.ENEMY_SKILLS = [
-    { id:"darkSlash", name:"흑풍참", hanja:"黑風斬", attackType:"SLASH", duration:1.02, damage:[620,820], poiseDamage:13, intent:"빠른 대각선 베기", threat:"기세 피해 낮음" },
-    { id:"darkChain", name:"흑풍연환검", hanja:"黑風連環劍", attackType:"MULTI", duration:1.72, damage:[235,315], poiseDamage:27, intent:"발을 바꾸는 삼연격", threat:"연속 공격" },
-    { id:"ghostThrust", name:"귀영돌", hanja:"鬼影突", attackType:"THRUST", duration:1.36, damage:[1150,1460], poiseDamage:39, intent:"방어선을 비집는 고속 찌르기", threat:"기세 피해 높음" },
-    { id:"darkFall", name:"흑천낙검", hanja:"黑天落劍", attackType:"ULTIMATE", duration:2.48, damage:[1900,2450], poiseDamage:52, intent:"공중 회전 후 광역 내려찍기", threat:"회피·반격 난이도 높음" },
-    { id:"darkBreath", name:"사기조식", hanja:"邪氣調息", attackType:"RECOVER", duration:.95, damage:[0,0], poiseDamage:0, intent:"사기를 가다듬어 기세 회복", threat:"회복 행동" }
+    {
+      id:"darkSlash", name:"흑풍참", hanja:"黑風斬", attackType:"SLASH", duration:1.02, damage:[620,820], poiseDamage:13,
+      intent:"빠른 대각선 베기", threat:"기세 피해 낮음", responseHint:"권장: 반격세",
+      responses:{
+        counter:{outcome:"parry"},
+        evade:{outcome:"evadeFail",reason:"대각선 검 궤적이 보법의 끝을 잡았습니다"}
+      }
+    },
+    {
+      id:"darkChain", name:"흑풍연환검", hanja:"黑風連環劍", attackType:"MULTI", duration:1.72, damage:[235,315], poiseDamage:27,
+      intent:"발을 바꾸는 삼연격", threat:"연속 공격", responseHint:"조건: 반격세 · 기세 50+",
+      responses:{
+        counter:{outcome:"parry",minPoise:50,poiseCost:20,failureOutcome:"guardFail",reason:"기세가 부족해 연환검을 버티지 못했습니다"},
+        evade:{outcome:"evadeFail",reason:"연속 검격이 보법을 추적했습니다"}
+      }
+    },
+    {
+      id:"ghostThrust", name:"귀영돌", hanja:"鬼影突", attackType:"THRUST", duration:1.36, damage:[1150,1460], poiseDamage:39,
+      intent:"방어선을 비집는 고속 찌르기", threat:"기세 피해 높음", responseHint:"권장: 유운보",
+      responses:{
+        counter:{outcome:"guardFail",reason:"찌르기가 검 안쪽을 관통했습니다"},
+        evade:{outcome:"evade"}
+      }
+    },
+    {
+      id:"darkFall", name:"흑천낙검", hanja:"黑天落劍", attackType:"ULTIMATE", duration:2.48, damage:[1900,2450], poiseDamage:52,
+      intent:"공중 회전 후 광역 내려찍기", threat:"광역 내려찍기", responseHint:"파훼 불가 · 공격으로 파세 필요",
+      responses:{
+        counter:{outcome:"guardFail",reason:"착지 충격파가 반격 자세를 무너뜨렸습니다"},
+        evade:{outcome:"evadeFail",reason:"착지 충격파의 범위를 벗어나지 못했습니다"}
+      }
+    },
+    {
+      id:"darkBreath", name:"사기조식", hanja:"邪氣調息", attackType:"RECOVER", duration:.95, damage:[0,0], poiseDamage:0,
+      intent:"사기를 가다듬어 기세 회복", threat:"회복 행동", responseHint:"대응 불필요 · 회복 행동", responses:{}
+    }
   ];
 
   W.TACTICS = [
     { id:"breathe", key:"Q", name:"운기조식", hanja:"運氣調息", desc:"한 턴을 사용해 내력 +28, 기세 +20, HP를 소량 회복합니다." },
-    { id:"evade", key:"W", name:"유운보", hanja:"流雲步", desc:"다음 공격을 회피합니다. THRUST에 강하고 넓은 HEAVY·ULTIMATE에 약합니다." },
-    { id:"counter", key:"E", name:"반격세", hanja:"反擊勢", desc:"검을 맞대고 파훼를 노립니다. SLASH에 강하고 THRUST에는 취약합니다." }
+    { id:"evade", key:"W", name:"유운보", hanja:"流雲步", desc:"귀영돌의 중심선 찌르기를 측면 보법으로 확정 회피합니다. 흑풍참·연환검·낙검에는 실패합니다." },
+    { id:"counter", key:"E", name:"반격세", hanja:"反擊勢", desc:"흑풍참을 확정 파훼합니다. 흑풍연환검은 기세 50 이상에서 기세 20을 써서 파훼합니다." }
   ];
 
   W.PLAYER_DATA = {
