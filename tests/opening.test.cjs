@@ -22,7 +22,7 @@ function makeGame(ai = false) {
   const calls = { callouts: [], messages: [], sparks: 0 };
   const game = {
     calls,
-    camera: { reset: noop, release: noop, focusBetween: noop, punch: noop, shake: noop, pan: noop, follow: noop, slowPush: noop },
+    camera: { update: noop, reset: noop, release: noop, focusBetween: noop, punch: noop, shake: noop, pan: noop, follow: noop, slowPush: noop },
     effects: {
       clear: noop, update: noop, trackSword: noop, poise: noop, damage: noop, shockwave: noop,
       spark() { calls.sparks += 1; }, slash: noop, dust: noop, petal: noop, lightning: noop, afterimage: noop
@@ -199,4 +199,29 @@ test("opening idle poses yield to timelines and reset without residue", () => {
   assert.equal(enemy.openingId, null);
   assert.equal(enemy.poseOverride, null);
   assert.equal(enemy.openingReactTime, 0);
+});
+
+test("player windup preserves the target opening until hit reaction begins", () => {
+  const game = makeGame();
+  const combat = game.combat;
+  combat.setEnemyIntent(W.ENEMY_SKILLS.find(skill => skill.id === "darkSlash"));
+  game.enemy.update(.22, false, false);
+  const stance = game.enemy.currentPose();
+  assert.ok(stance.backFoot <= -58);
+  assert.ok(stance.sword <= -.38);
+
+  combat.runner = { a: game.player, s: { id: "windup" }, update() {} };
+  combat.update(.1);
+  assert.equal(game.enemy.combatBusy, false);
+  assert.equal(game.enemy.canUseOpeningPose(), true);
+  const duringPlayerWindup = game.enemy.currentPose();
+  assert.ok(duringPlayerWindup.backFoot <= -58);
+  assert.ok(duringPlayerWindup.sword <= -.38);
+
+  game.enemy.react(1);
+  assert.equal(game.enemy.canUseOpeningPose(), false);
+  combat.runner = { a: game.enemy, s: { id: "enemyArt" }, update() {} };
+  combat.update(.01);
+  assert.equal(game.enemy.combatBusy, true);
+  assert.equal(game.enemy.canUseOpeningPose(), false);
 });

@@ -66,7 +66,7 @@
     update(realDt){
       const rate=(this.slow?.36:1)*(this.cinematicRate||1);let dt=realDt*rate;this.camera.update(realDt);this.effects.update(realDt*(this.hitStop>0?.18:(this.slow?.55:1)));this.updateDeferred(realDt);
       if(this.hitStop>0){this.hitStop-=realDt;dt=0;}
-      const busy=!!this.runner;this.player.update(dt,busy&&this.runner.a===this.player,busy);this.enemy.update(dt,busy&&this.runner.a===this.enemy,busy);
+      const busy=!!this.runner,playerActing=busy&&this.runner.a===this.player,enemyActing=busy&&this.runner.a===this.enemy;this.player.update(dt,playerActing,playerActing);this.enemy.update(dt,enemyActing,enemyActing);
       this.effects.trackSword(this.player,Math.max(realDt,.001),busy);this.effects.trackSword(this.enemy,Math.max(realDt,.001),busy);
       if(this.runner)this.runner.update(dt);else if(this.wait>0){this.wait-=dt;if(this.wait<=0&&this.turn==="enemy")this.enemyAttack();}
     }
