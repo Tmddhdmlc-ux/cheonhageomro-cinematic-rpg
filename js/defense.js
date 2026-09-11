@@ -19,6 +19,7 @@
     darkOver:{...base(),crouch:8,hipX:18,torso:.38,frontFoot:68,backFoot:-15,arm:1.0,elbow:.03,reach:1,sword:1.08,offArm:.65,offElbow:.15,cape:-1},
     ghostCoil:{...base(),crouch:50,hipX:-30,torso:-.38,frontFoot:8,backFoot:-72,arm:.05,elbow:.62,reach:.42,sword:.02,offArm:.08,offElbow:.2,cape:.8},
     ghostDrive:{...base(),crouch:7,hipX:30,torso:.5,frontFoot:84,backFoot:-3,backLift:12,arm:-.02,elbow:.01,reach:1,sword:-.01,swordPull:1,offArm:.02,offElbow:.02,cape:-1.25},
+    darkFeint:{...base(),crouch:24,hipX:-15,torso:-.31,head:-.05,frontFoot:15,backFoot:-69,arm:-1.08,elbow:.5,reach:.54,sword:-1.2,swordPull:.14,offArm:-.45,offElbow:.4,cape:.6},
     darkJump:{...base(),crouch:2,rootLift:0,frontFoot:18,backFoot:-18,frontLift:25,backLift:30,torso:.15,arm:-1.7,elbow:.08,reach:1,sword:-1.72,offArm:-1.3,offElbow:.1,cape:-.85},
     darkDive:{...base(),crouch:3,frontFoot:28,backFoot:-20,frontLift:18,backLift:20,torso:.48,arm:1.2,elbow:.03,reach:1,sword:1.25,swordPull:1,offArm:.9,offElbow:.15,cape:-1.2},
     darkLand:{...base(),crouch:48,hipX:18,frontFoot:62,backFoot:-45,torso:.5,arm:1.25,elbow:.02,reach:1,sword:1.28,swordPull:1,offArm:.9,offElbow:.2,cape:-1.1},
@@ -28,6 +29,7 @@
     peakStrike:{...base(),crouch:30,hipX:22,torso:.48,head:.08,frontFoot:68,backFoot:-42,arm:1.38,elbow:.02,reach:1,sword:1.42,swordPull:.72,offArm:1.12,offElbow:.08,cape:-.7},
     ironWall:{...base(),crouch:44,hipX:-24,torso:-.38,head:-.08,frontFoot:4,backFoot:-78,arm:-.58,elbow:.2,reach:.82,sword:-.56,swordPull:.08,offArm:-.5,offElbow:.18,cape:.16},
     ironDrive:{...base(),crouch:29,hipX:26,torso:.28,head:.05,frontFoot:62,backFoot:-30,backLift:5,arm:-.18,elbow:.08,reach:.94,sword:-.15,swordPull:.28,offArm:-.12,offElbow:.08,cape:-.38},
+    ironFeint:{...base(),crouch:45,hipX:-29,torso:-.34,head:-.07,frontFoot:5,backFoot:-88,arm:-.88,elbow:.46,reach:.57,sword:-.93,swordPull:.06,offArm:-.62,offElbow:.3,cape:.3},
     ironRecover:{...base(),crouch:35,hipX:-18,torso:-.18,frontFoot:16,backFoot:-72,arm:.72,elbow:.4,reach:.48,sword:.98,offArm:.38,offElbow:.18,cape:.18}
   };
 
@@ -49,16 +51,17 @@
 
   class EnemySkillRunner{
     constructor(combat,attacker,target,skill){
-      this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.heavy=!!skill.heavy;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;
-      this.responseCue=Number.isFinite(skill.responseCue)?skill.responseCue:null;this.cueHandled=false;this.awaitingResponse=false;this.responseChosen=false;this.selectedResponse=null;this.resolvedOutcome=null;this.responseDelay=0;this.responseLinkDuration=.15;
+      this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.feint=skill.feint||null;if(this.feint&&(!combat.branchCommitted||combat.feintId!==skill.id))combat.commitFeint?.(skill);this.branchSkill=this.feint?combat.enemySkills.find(item=>item.id===combat.feintBranch)||null:null;this.heavy=!!(this.branchSkill||skill).heavy;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;
+      this.decisionCue=this.feint?.decisionCue??null;this.branchRevealed=false;this.responseCue=Number.isFinite(skill.responseCue)?skill.responseCue:null;this.duration=this.feint&&this.branchSkill?this.responseCue+this.branchSkill.duration-this.feint.branchStarts[this.branchSkill.id]:skill.duration;this.cueHandled=false;this.awaitingResponse=false;this.responseChosen=false;this.selectedResponse=null;this.resolvedOutcome=null;this.responseDelay=0;this.responseLinkDuration=.15;
       this.guard=null;this.startPoise=null;this.failureReason="";this.responseRule=null;this.outcome="hit";
       if(target.guard){this.guard=target.guard;this.startPoise=target.poise;this.outcome=this.resolveOutcome();this.resolvedOutcome=this.outcome;this.selectedResponse=this.guard;this.responseChosen=true;this.cueHandled=true;}
       this.c.showSkillTitle(skill);if(skill.id==="darkFall")this.c.cinematic(true);
     }
     once(id,fn){if(!this.events.has(id)){this.events.add(id);fn();}}
+    get responseSkill(){return this.branchSkill||this.s;}
     resolveOutcome(){
-      if(!this.guard||this.s.attackType==="RECOVER")return"hit";
-      const rule=this.s.responses?.[this.guard];
+      const skill=this.responseSkill;if(!this.guard||skill.attackType==="RECOVER")return"hit";
+      const rule=skill.responses?.[this.guard];
       if(!rule)return"hit";
       this.responseRule=rule;
       if(rule.minPoise!=null&&this.startPoise<rule.minPoise){
@@ -69,10 +72,12 @@
       return rule.outcome;
     }
     pose(a,b,x,y){this.a.setPose(mix(a,b,ph(this.t,x,y)));}
-    clashPose(){return this.s.id==="fallingPeak"?POSES.peakStrike:this.s.id==="ironAdvance"?POSES.ironDrive:this.heavy?POSES.ironSweep:POSES.darkSlash;}
+    clashPose(){const id=this.responseSkill.id;return id==="fallingPeak"?POSES.peakStrike:id==="ironAdvance"?POSES.ironDrive:this.heavy?POSES.ironSweep:POSES.darkSlash;}
+    runTimeline(){(this[this.s.id]||this.darkSlash).call(this,this.t);}
+    revealFeint(){if(!this.feint||this.branchRevealed)return false;this.branchRevealed=true;this.c.revealFeint?.(this);this.c.showSkillTitle(this.branchSkill);this.c.audio.tone?.("triangle",420,610,.1,.035);return true;}
     openResponseCue(){
       if(this.cueHandled||this.responseCue==null)return false;
-      this.cueHandled=true;this.awaitingResponse=true;this.t=this.responseCue;(this[this.s.id]||this.darkSlash).call(this,this.t);this.c.openResponse?.(this);return true;
+      if(this.feint)this.revealFeint();this.cueHandled=true;this.awaitingResponse=true;this.t=this.responseCue;this.runTimeline();this.c.openResponse?.(this);return true;
     }
     acceptResponse(id){
       if(!this.awaitingResponse||this.responseChosen)return false;
@@ -84,29 +89,30 @@
       if(this.done||this.awaitingResponse)return;
       if(this.responseDelay>0){const used=Math.min(dt,this.responseDelay);this.responseDelay-=used;this.responseLink(1-this.responseDelay/this.responseLinkDuration);if(this.responseDelay>0)return;dt-=used;}
       const next=this.t+dt;
+      if(this.decisionCue!=null&&!this.branchRevealed&&next>=this.decisionCue)this.revealFeint();
       if(this.responseCue!=null&&!this.cueHandled&&next>=this.responseCue){this.openResponseCue();return;}
-      this.t=next;(this[this.s.id]||this.darkSlash).call(this,this.t);if(this.t>=this.s.duration)this.finish();
+      this.t=next;this.runTimeline();if(this.t>=this.duration)this.finish();
     }
     impact(opt={}){
       this.b.guard=null;
       if(this.outcome==="parry"){this.parry();return;}
       if(this.outcome==="evade"){this.evade();return;}
-      if(this.outcome==="guardFail")this.once("failureCallout",()=>this.c.callout("破防",`반격 실패 · ${this.failureReason}`,"break"));
-      if(this.outcome==="evadeFail")this.once("failureCallout",()=>this.c.callout("失步",`회피 실패 · ${this.failureReason}`,"break"));
+      if(this.outcome==="guardFail")this.once("failureCallout",()=>this.c.callout(this.feint?"中變":"破防",this.feint?"읽혔다 — 변초에 걸렸다":`반격 실패 · ${this.failureReason}`,"break"));
+      if(this.outcome==="evadeFail")this.once("failureCallout",()=>this.c.callout(this.feint?"中變":"失步",this.feint?"읽혔다 — 변초에 걸렸다":`회피 실패 · ${this.failureReason}`,"break"));
       const poiseScale=(this.outcome==="guardFail"?1.35:this.outcome==="evadeFail"?1.18:1)*(opt.poiseScale||1);
-      this.c.hit(this.a,this.b,this.s,{...opt,poiseScale});
+      this.c.hit(this.a,this.b,this.responseSkill,{...opt,poiseScale});
     }
     parry(){
       this.once("parry",()=>{
         this.b.setPose(POSES.guard);this.a.setPose(this.heavy?this.clashPose():{...POSES.darkSlash,sword:-.55,arm:-.47});
         let at=this.a.getSwordTip(),bt=this.b.getSwordTip();this.a.x+=bt.x-at.x;at=this.a.getSwordTip();const clash={x:(at.x+bt.x)/2,y:(at.y+bt.y)/2};
-        this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.145:.11);this.c.camera.focusBetween(this.a,this.b,this.heavy?1.2:1.28);this.c.camera.punch(this.aside,this.heavy?18:14);this.c.camera.shake(this.heavy?22:18,this.heavy?.27:.22);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#fff0b2",this.heavy?38:32,this.heavy?1.65:1.4);this.c.effects.shockwave(clash.x,clash.y,"#fff1c4",this.heavy?88:72,this.heavy?.36:.3);this.c.callout("破招","파훼","parry");this.c.grantInitiative?.();
+        this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.145:.11);this.c.camera.focusBetween(this.a,this.b,this.heavy?1.2:1.28);this.c.camera.punch(this.aside,this.heavy?18:14);this.c.camera.shake(this.heavy?22:18,this.heavy?.27:.22);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#fff0b2",this.heavy?38:32,this.heavy?1.65:1.4);this.c.effects.shockwave(clash.x,clash.y,"#fff1c4",this.heavy?88:72,this.heavy?.36:.3);this.c.callout(this.feint?"看破":"破招",this.feint?"간파 — 변초를 꺾었다":"파훼","parry");this.c.grantInitiative?.();
         if(this.responseRule?.poiseCost){const cost=this.responseRule.poiseCost;this.b.poise=Math.max(1,this.b.poise-cost);this.c.effects.poise(this.b.x,this.b.y-98,cost,"cost");this.c.game.updateUI();}
         this.c.defer(.2,()=>{this.b.setPose(POSES.counter);this.c.effects.slash(this.a.getTorsoPosition().x,this.a.getTorsoPosition().y,.15,"#dffff6",125,.22);this.c.hit(this.b,this.a,{damage:[430,570],poiseDamage:18},{hitStop:.07,power:.8,knock:95,final:false});});
       });
     }
     evade(){
-      this.once("evade",()=>{this.c.effects.afterimage(this.b,.3);this.b.x-=this.b.side*105;this.b.setPose({...POSES.evade,rootLift:9});this.c.audio.dash();this.c.camera.focusBetween(this.a,this.b,1.13);this.c.callout("回避","회피","evade");this.c.grantInitiative?.();});
+      this.once("evade",()=>{this.c.effects.afterimage(this.b,.3);this.b.x-=this.b.side*105;this.b.setPose({...POSES.evade,rootLift:9});this.c.audio.dash();this.c.camera.focusBetween(this.a,this.b,1.13);this.c.callout(this.feint?"看破":"回避",this.feint?"간파 — 변초를 꺾었다":"회피","evade");this.c.grantInitiative?.();});
     }
     failedClash(){
       this.once("failedClash",()=>{this.b.setPose(POSES.guard);this.a.setPose(this.heavy?this.clashPose():{...POSES.darkSlash,sword:-.55,arm:-.47});let at=this.a.getSwordTip(),bt=this.b.getSwordTip();this.a.x+=bt.x-at.x;at=this.a.getSwordTip();const clash={x:(at.x+bt.x)/2,y:(at.y+bt.y)/2};this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.12:.085);this.c.camera.focusBetween(this.a,this.b,1.2);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#ffd6b0",this.heavy?28:20,this.heavy?1.35:1.05);this.c.effects.shockwave(clash.x,clash.y,"#ffd0aa",this.heavy?70:52,this.heavy?.3:.24);});
@@ -114,6 +120,8 @@
     trackedEvade(){
       this.once("trackedEvade",()=>{this.c.effects.afterimage(this.b,.28);this.c.audio.dash();this.c.camera.focusBetween(this.a,this.b,1.12);});
     }
+    darkFeint(t){const meta=this.feint;if(t<meta.decisionCue){this.pose(base(),POSES.darkFeint,0,meta.decisionCue);return;}const start=meta.branchStarts[this.branchSkill.id],branchT=start+(t>meta.responseCue?t-meta.responseCue:0);this[this.branchSkill.id](branchT);}
+    ironFeint(t){const meta=this.feint;if(t<meta.decisionCue){this.pose(base(),POSES.ironFeint,0,meta.decisionCue);return;}const start=meta.branchStarts[this.branchSkill.id],branchT=start+(t>meta.responseCue?t-meta.responseCue:0);this[this.branchSkill.id](branchT);}
     darkSlash(t){
       const evadeEnd=this.bx-this.b.side*92;
       if(this.outcome==="evadeFail"){

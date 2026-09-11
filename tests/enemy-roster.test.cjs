@@ -18,12 +18,12 @@ test("enemy registry exposes two distinct complete duel definitions",()=>{
   assert.deepEqual(Object.keys(W.ENEMIES),["yama","mujin"]);
   const yama=W.ENEMIES.yama,mujin=W.ENEMIES.mujin;
   assert.notEqual(yama.character,mujin.character);assert.notEqual(yama.skills,mujin.skills);assert.notEqual(yama.openings,mujin.openings);assert.notEqual(yama.arenaId,mujin.arenaId);
-  assert.equal(yama.bossPhase,true);assert.equal(mujin.bossPhase,false);assert.equal(mujin.arenaId,"bluestoneGate");assert.equal(yama.ai.type,"yamaAdaptive");assert.equal(mujin.ai.type,"fixedCycle");assert.deepEqual(Array.from(mujin.ai.defaultOrder),["ironSweep","fallingPeak","ironAdvance"]);assert.equal(W.ENEMY_DATA,yama.character);assert.equal(W.ENEMY_SKILLS,yama.skills);
+  assert.equal(yama.bossPhase,true);assert.equal(mujin.bossPhase,false);assert.equal(mujin.arenaId,"bluestoneGate");assert.equal(yama.ai.type,"yamaAdaptive");assert.equal(mujin.ai.type,"fixedCycle");assert.deepEqual(Array.from(mujin.ai.defaultOrder),["ironSweep","fallingPeak","ironFeint"]);assert.equal(W.ENEMY_DATA,yama.character);assert.equal(W.ENEMY_SKILLS,yama.skills);
 });
 
 test("combat injects only the selected enemy skill and opening set",()=>{
   const yama=makeGame(W.ENEMIES.yama);yama.combat.reset();assert.equal(yama.combat.phase.enabled,true);assert.ok(yama.combat.enemySkills.some(skill=>skill.id==="darkFall"));assert.equal(yama.combat.mujin,null);
-  const mujin=makeGame(W.ENEMIES.mujin);mujin.combat.reset();assert.equal(mujin.combat.phase.enabled,false);assert.equal(mujin.combat.phase.active,false);assert.deepEqual(Array.from(mujin.combat.enemySkills,skill=>skill.id),["ironSweep","fallingPeak","ironAdvance","ironBreath"]);assert.ok(!mujin.combat.enemySkills.some(skill=>skill.id==="darkFall"));assert.equal(mujin.combat.intent.id,"ironSweep");assert.equal(mujin.combat.opening.id,"middleGateSweep");
+  const mujin=makeGame(W.ENEMIES.mujin);mujin.combat.reset();assert.equal(mujin.combat.phase.enabled,false);assert.equal(mujin.combat.phase.active,false);assert.deepEqual(Array.from(mujin.combat.enemySkills,skill=>skill.id),["ironSweep","fallingPeak","ironAdvance","ironFeint","ironBreath"]);assert.ok(!mujin.combat.enemySkills.some(skill=>skill.id==="darkFall"));assert.equal(mujin.combat.intent.id,"ironSweep");assert.equal(mujin.combat.opening.id,"middleGateSweep");
 });
 
 test("selection mode rejects combat and debug intent inputs",()=>{

@@ -48,7 +48,7 @@ function makeRunner(skillId, guard, poise = 100) {
 
 test("all enemy intent hints and explicit response rules are present", () => {
   for (const skill of W.ENEMY_SKILLS) assert.ok(skill.responseHint, skill.id);
-  for (const skill of W.ENEMY_SKILLS.filter(item => item.attackType !== "RECOVER")) {
+  for (const skill of W.ENEMY_SKILLS.filter(item => !["RECOVER","FEINT"].includes(item.attackType))) {
     assert.ok(skill.responses.counter, `${skill.id} counter`);
     assert.ok(skill.responses.evade, `${skill.id} evade`);
   }

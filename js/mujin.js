@@ -1,12 +1,12 @@
 (function(W){
   "use strict";
 
-  const DEFAULT_ORDER=["ironSweep","fallingPeak","ironAdvance"];
-  const PRESSURE_ORDER=["ironAdvance","ironSweep","fallingPeak"];
+  const DEFAULT_ORDER=["ironSweep","fallingPeak","ironFeint"];
+  const PRESSURE_ORDER=["ironAdvance","ironSweep","ironFeint"];
 
   class MujinIntentController{
     constructor(combat){this.c=combat;this.rules=combat.enemyConfig.ai||{};this.reset();}
-    reset(){this.order=this.chooseOrder();this.step=0;this.recovering=false;this.lastSkillId=null;}
+    reset(){this.order=this.chooseOrder();this.step=0;this.recovering=false;this.lastSkillId=null;this.pendingFeint=null;}
     chooseOrder(){const threshold=this.rules.pressureThreshold??40,normal=this.rules.defaultOrder||DEFAULT_ORDER,pressure=this.rules.pressureOrder||PRESSURE_ORDER;return this.c.player.poise<threshold?pressure.slice():normal.slice();}
     get active(){return this.c.enemyConfig?.ai?.type==="fixedCycle";}
     get phaseStep(){return this.recovering?0:this.step+1;}
@@ -16,14 +16,14 @@
     sync(){const skill=this.current();this.c.setEnemyIntent(skill);return skill;}
     prepareNext(){
       if(!this.active||this.recovering||this.lastSkillId==="ironBreath"||this.c.enemy.poise>=(this.rules.recoveryThreshold??35))return this.current();
-      this.recovering=true;
+      if(this.current()?.feint)this.pendingFeint=this.c.feintReservation?.();this.recovering=true;
       return this.sync();
     }
     startCycle(){this.order=this.chooseOrder();this.step=0;this.recovering=false;return this.sync();}
     advanceAfter(skill){
       if(!this.active||!skill)return this.sync();
       this.lastSkillId=skill.id;
-      if(skill.id==="ironBreath"){this.recovering=false;return this.sync();}
+      if(skill.id==="ironBreath"){this.recovering=false;const next=this.current();if(next?.feint&&this.pendingFeint)this.c.restoreFeintReservation?.(this.pendingFeint);this.pendingFeint=null;return this.sync();}
       if(skill.id===this.order[this.step]){
         if(this.step===this.order.length-1)return this.startCycle();
         this.step+=1;
