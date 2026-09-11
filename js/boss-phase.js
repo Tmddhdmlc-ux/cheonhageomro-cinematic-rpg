@@ -46,7 +46,7 @@
     skillForStep(){const id=this.route&&META.routes[this.route][this.step];return W.ENEMY_SKILLS.find(skill=>skill.id===id)||null;}
     syncIntent(){
       if(!this.active)return null;
-      const skill=this.skillForStep();this.c.intent=skill;this.c.intentIndex=W.ENEMY_SKILLS.indexOf(skill);this.signatureArmed=skill?.id==="darkFall";this.c.game.updateUI();return skill;
+      const skill=this.skillForStep();this.c.setEnemyIntent(skill);this.signatureArmed=skill?.id==="darkFall";this.c.game.updateUI();return skill;
     }
     startCycle(){this.route=this.routeForHabits();this.step=0;this.signatureCanceled=false;return this.syncIntent();}
     armIfEligible(){

@@ -23,7 +23,7 @@
   };
 
   class SkillRunner{
-    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;this.setup();}
+    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;this.opening=W.evaluateOpening(combat.opening,skill.attackType);this.setup();}
     once(id,fn){if(!this.events.has(id)){this.events.add(id);fn();}}
     setup(){
       this.a.clearPose();
@@ -32,7 +32,7 @@
       if(this.s.id==="thunder"){this.c.cinematic(true);this.c.camera.pan(this.ax,this.ay-120,1.42);this.c.audio.charge();}
     }
     update(dt){this.t+=dt;const fn=this[this.s.id]||this.basic;fn.call(this,this.t);if(this.t>=this.s.duration)this.finish();}
-    fxHit(opts={}){this.c.hit(this.a,this.b,this.s,opts);}
+    fxHit(opts={}){this.c.hit(this.a,this.b,this.s,{...opts,openingSnapshot:this.opening});}
     poseSegment(a,b,x,y){this.a.setPose(mix(a,b,phase(this.t,x,y)));}
     basic(t){
       if(t<.14)this.poseSegment(P.idle,P.basicWind,0,.14);
