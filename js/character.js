@@ -25,11 +25,13 @@
       crossGuard:{...basePose(),crouch:18,hipX:-10,torso:-.16,head:-.02,frontFoot:21,backFoot:-61,arm:-.48,elbow:.42,reach:.72,sword:-.42,swordPull:.18,offArm:2.42,offElbow:.22,cape:.32},
       needlePoint:{...basePose(),crouch:14,hipX:8,torso:.13,head:.01,frontFoot:27,backFoot:-31,arm:-.04,elbow:.08,reach:.94,sword:-.01,swordPull:.35,offArm:.2,offElbow:.06,cape:-.18},
       flowingShadow:{...basePose(),crouch:31,hipX:-18,torso:-.24,head:-.07,frontFoot:48,backFoot:-69,arm:.34,elbow:.34,reach:.68,sword:.58,offArm:2.72,offElbow:.18,cape:.68},
+      emptyGate:{...salpungsePose(),crouch:23,hipX:-12,torso:-.29,head:-.05,frontFoot:17,backFoot:-68,arm:-1.05,elbow:.5,reach:.56,sword:-1.18,swordPull:.12,offArm:-.42,offElbow:.42,cape:.58},
       openGate:{...basePose(),crouch:11,hipX:-3,torso:.15,head:.06,frontFoot:39,backFoot:-43,arm:.72,elbow:.44,reach:.55,sword:.9,offArm:2.24,offElbow:.35,cape:.12},
       ultimateCharge:{...salpungsePose(),crouch:39,hipX:-21,torso:-.34,head:-.1,frontFoot:15,backFoot:-73,arm:-.86,elbow:.46,reach:.72,sword:-.65,swordPull:.3,offArm:2.85,offElbow:.24,cape:.76},
       middleGateSweep:{...cheolsansePose(),crouch:34,hipX:-22,torso:-.28,frontFoot:12,backFoot:-78,arm:-.38,elbow:.5,reach:.7,sword:-.42,offArm:-.18,offElbow:.32,cape:.38},
       raisedSaber:{...cheolsansePose(),crouch:38,hipX:-20,torso:-.2,frontFoot:16,backFoot:-75,arm:-1.02,elbow:.34,reach:.86,sword:-1.08,swordPull:.18,offArm:-.72,offElbow:.25,cape:.3},
-      ironWallClose:{...cheolsansePose(),crouch:40,hipX:-24,torso:-.34,frontFoot:8,backFoot:-76,arm:-.58,elbow:.24,reach:.78,sword:-.55,swordPull:.05,offArm:-.46,offElbow:.14,cape:.2}
+      ironWallClose:{...cheolsansePose(),crouch:40,hipX:-24,torso:-.34,frontFoot:8,backFoot:-76,arm:-.58,elbow:.24,reach:.78,sword:-.55,swordPull:.05,offArm:-.46,offElbow:.14,cape:.2},
+      hiddenSaber:{...cheolsansePose(),crouch:43,hipX:-27,torso:-.31,frontFoot:7,backFoot:-84,arm:-.86,elbow:.44,reach:.58,sword:-.91,swordPull:.05,offArm:-.58,offElbow:.28,cape:.28}
     };
     return poses[id]||basePose();
   };

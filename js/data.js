@@ -59,6 +59,11 @@
       }
     },
     {
+      id:"darkFeint", name:"흑풍허초", hanja:"黑風虛招", attackType:"FEINT", duration:1.38, responseCue:.52, damage:[0,0], poiseDamage:0,
+      intent:"검을 외측에 둔 채 두 갈래를 감춤", threat:"허초 · 변초 가능", responseHint:"결정 자세를 읽으십시오 · W/E/Space",
+      feint:{decisionCue:.42,responseCue:.52,stance:"허문세",branches:["darkSlash","ghostThrust"],punishCounter:"ghostThrust",punishEvade:"darkSlash",branchStarts:{darkSlash:.48,ghostThrust:.56}}
+    },
+    {
       id:"darkFall", name:"흑천낙검", hanja:"黑天落劍", attackType:"ULTIMATE", duration:2.48, damage:[1900,2450], poiseDamage:52,
       intent:"공중 회전 후 광역 내려찍기", threat:"광역 내려찍기", responseHint:"대응 전술 불가 · 공격으로 기세를 0까지 끊어라",
       responses:{
@@ -98,13 +103,18 @@
       }
     },
     {
+      id:"ironFeint", name:"철산변도", hanja:"鐵山變刀", attackType:"FEINT", duration:1.61, responseCue:.58, damage:[0,0], poiseDamage:0, heavy:true,
+      intent:"도를 세워 중심을 닫고 두 갈래를 감춤", threat:"허초 · 변초 가능", responseHint:"결정 자세를 읽으십시오 · W/E/Space",
+      feint:{decisionCue:.48,responseCue:.58,stance:"잠도세",branches:["fallingPeak","ironAdvance"],punishCounter:"fallingPeak",punishEvade:"ironAdvance",branchStarts:{fallingPeak:.72,ironAdvance:.48}}
+    },
+    {
       id:"ironBreath", name:"철산가세", hanja:"鐵山架勢", attackType:"RECOVER", duration:1.05, damage:[0,0], poiseDamage:0, heavy:true, skipPassivePoiseRecovery:true,
       intent:"도끝을 낮추고 뒷발과 골반을 다시 세움", threat:"기세 회복", responseHint:"공격 기회 · 모든 일반 초식 유효", responses:{}
     }
   ];
 
   W.ATTACK_TYPE_LABELS = {
-    SLASH: "베기", THRUST: "찌르기", MULTI: "연격", HEAVY:"중격", IMPACT:"충격", RECOVER:"조식", ULTIMATE: "오의"
+    SLASH: "베기", THRUST: "찌르기", MULTI: "연격", HEAVY:"중격", IMPACT:"충격", FEINT:"허초", RECOVER:"조식", ULTIMATE: "오의"
   };
   W.OPENING_MULTIPLIERS = {
     exploit: { damage: 1.10, poise: 1.50 },
@@ -125,6 +135,9 @@
       id: "flowingShadow", name: "유영세", hanja: "流影勢", weakTo: ["MULTI"], resists: ["SLASH", "THRUST"], reactionType: "sidestep",
       damageMultiplier: 1.10, poiseMultiplier: 1.50
     },
+    darkFeint: {
+      id:"emptyGate",name:"허문세",hanja:"虛門勢",weakTo:[],resists:[],reactionType:null,damageMultiplier:1,poiseMultiplier:1
+    },
     darkBreath: {
       id: "openGate", name: "기문개방", hanja: "氣門開放", weakTo: ["SLASH", "THRUST", "MULTI"], resists: [], reactionType: null,
       damageMultiplier: 1.10, poiseMultiplier: 1.50
@@ -139,6 +152,7 @@
     ironSweep:{id:"middleGateSweep",name:"중문횡도",hanja:"中門橫刀",weakTo:["THRUST"],resists:["SLASH"],reactionType:"block",damageMultiplier:1.10,poiseMultiplier:1.50},
     fallingPeak:{id:"raisedSaber",name:"거도상세",hanja:"擧刀上勢",weakTo:["SLASH"],resists:["THRUST"],reactionType:"deflect",damageMultiplier:1.10,poiseMultiplier:1.50},
     ironAdvance:{id:"ironWallClose",name:"철벽근세",hanja:"鐵壁近勢",weakTo:["MULTI"],resists:["SLASH","THRUST"],reactionType:"block",damageMultiplier:1.10,poiseMultiplier:1.50},
+    ironFeint:{id:"hiddenSaber",name:"잠도세",hanja:"潛刀勢",weakTo:[],resists:[],reactionType:null,damageMultiplier:1,poiseMultiplier:1},
     ironBreath:null
   };
   W.MUJIN_OPENINGS.ironBreath=W.ENEMY_OPENINGS.darkBreath;
@@ -169,8 +183,8 @@
     hanja: "殺風勢",
     duration: 1.62,
     routes: {
-      counter: ["ghostThrust", "darkChain", "darkSlash", "darkFall"],
-      evade: ["darkSlash", "darkChain", "ghostThrust", "darkFall"]
+      counter: ["ghostThrust", "darkChain", "darkFeint", "darkFall"],
+      evade: ["darkSlash", "darkChain", "darkFeint", "darkFall"]
     }
   };
 
@@ -206,7 +220,7 @@
     },
     mujin:{
       id:"mujin",name:"철산도객 무진",hanja:"鐵山刀客 武震",title:"중도 · 기세 압박 · 묵직한 고정 패턴",traits:["중도","기세 압박","고정 3수"],difficulty:"정예",arenaId:"bluestoneGate",arenaName:"청석관문",
-      character:W.MUJIN_DATA,skills:W.MUJIN_SKILLS,openings:W.MUJIN_OPENINGS,aiType:"mujin",ai:{type:"fixedCycle",defaultOrder:["ironSweep","fallingPeak","ironAdvance"],pressureOrder:["ironAdvance","ironSweep","fallingPeak"],recoveryThreshold:35,pressureThreshold:40},bossPhase:false,badge:"정예 · 철산도",
+      character:W.MUJIN_DATA,skills:W.MUJIN_SKILLS,openings:W.MUJIN_OPENINGS,aiType:"mujin",ai:{type:"fixedCycle",defaultOrder:["ironSweep","fallingPeak","ironFeint"],pressureOrder:["ironAdvance","ironSweep","ironFeint"],recoveryThreshold:35,pressureThreshold:40},bossPhase:false,badge:"정예 · 철산도",
       victoryMessage:"승리 — 철산의 문이 열렸습니다",defeatMessage:"패배 — 무거운 도세를 다시 읽으십시오",breakMessage:"파세 위기 · 무진의 중도 압박"
     }
   };

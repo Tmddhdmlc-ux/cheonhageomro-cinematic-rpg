@@ -137,7 +137,7 @@ test("phase routes are selected from the counter and evade habit snapshot", () =
   assert.equal(counterPhase.route, "counter");
   assert.deepEqual(
     Array.from(W.BOSS_PHASE.routes[counterPhase.route]),
-    ["ghostThrust", "darkChain", "darkSlash", "darkFall"]
+    ["ghostThrust", "darkChain", "darkFeint", "darkFall"]
   );
 
   const evadeGame = makeGame();
@@ -145,7 +145,7 @@ test("phase routes are selected from the counter and evade habit snapshot", () =
   assert.equal(evadePhase.route, "evade");
   assert.deepEqual(
     Array.from(W.BOSS_PHASE.routes[evadePhase.route]),
-    ["darkSlash", "darkChain", "ghostThrust", "darkFall"]
+    ["darkSlash", "darkChain", "darkFeint", "darkFall"]
   );
 });
 
@@ -162,7 +162,7 @@ test("the four-step phase pattern is deterministic, excludes recovery, and re-re
     }
     phase.advanceAfterEnemySkill(executed);
   }
-  assert.deepEqual(seen, ["ghostThrust", "darkChain", "darkSlash", "darkFall"]);
+  assert.deepEqual(seen, ["ghostThrust", "darkChain", "darkFeint", "darkFall"]);
   assert.equal(seen.includes("darkBreath"), false);
   assert.equal(phase.route, "evade");
   assert.equal(phase.phaseStep, 1);
@@ -176,7 +176,7 @@ test("F8-style cycling advances only to the next legal phase step", () => {
   assert.equal(phase.forceNext().id, "darkChain");
   assert.equal(phase.phaseStep, 2);
   assert.equal(phase.route, route);
-  assert.equal(phase.forceNext().id, "darkSlash");
+  assert.equal(phase.forceNext().id, "darkFeint");
   assert.equal(phase.forceNext().id, "darkFall");
   assert.equal(phase.signatureArmed, true);
   assert.equal(phase.forceNext().id, "ghostThrust");

@@ -167,10 +167,20 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 #enemy-intent span { display:block;color:#8e9794;font-size:8px;margin-top:3px; }
 #enemy-intent #intent-response { color:#e0c27c;font-weight:800;letter-spacing:.04em; }
 #enemy-intent #intent-opening { margin-top:5px;color:#82cfbd;font-weight:800;letter-spacing:.05em; }
+#feint-candidates { display:none;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px; }
+#feint-candidates.show { display:grid; }
+#feint-candidates span { margin:0;padding:4px 5px;border:1px solid #73645e;background:#151313cc;color:#bcb4aa;text-align:center;transition:.15s; }
+#feint-candidates i { display:block;color:#d4bda9;font:700 15px/1 serif;font-style:normal; }
+#feint-candidates b { display:block;margin-top:2px;color:inherit;font:700 8px/1.2 serif;letter-spacing:.03em; }
+#feint-candidates.decided span { opacity:.35;filter:saturate(.35); }
+#feint-candidates.decided span.selected { opacity:1;filter:none;border-color:#dfc675;background:#302817;color:#f2d986;box-shadow:0 0 10px #cfb64c3d; }
+#enemy-intent.feint { border-right-color:#bd8d58; }
+#enemy-intent.feint #intent-desc { color:#d2a96f;font-weight:800; }
 #enemy-intent.signature { border-color:#d59a62;animation:signature-intent 1.35s ease-in-out infinite; }
 #enemy-intent.signature #intent-phase { color:#e0aa72; }
 #game-shell[data-enemy="mujin"] #enemy-intent { border-right-color:#829a98;background:linear-gradient(90deg,transparent,#101718dc); }
 #game-shell[data-enemy="mujin"] #enemy-intent small { color:#91aaa8; }
+#game-shell[data-enemy="mujin"] #enemy-intent.feint { border-right-color:#bd8d58; }
 @keyframes signature-intent { 0%,100%{box-shadow:0 0 0 #d59a6200} 50%{box-shadow:0 0 16px #d59a6244} }
 #game-shell.cinematic #enemy-intent { opacity:0;transform:translateY(-8px); }
 

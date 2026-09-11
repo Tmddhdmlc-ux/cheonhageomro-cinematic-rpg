@@ -16,16 +16,16 @@ function makeGame(){
 }
 const skill=id=>W.MUJIN_SKILLS.find(item=>item.id===id);
 
-test("Mujin stats, weapon, and all four actions match the specification",()=>{
+test("Mujin stats, weapon, and all five actions match the specification",()=>{
   const m=W.MUJIN_DATA;assert.deepEqual([m.maxHp,m.attack,m.defense,m.crit,m.speed,m.maxPoise,m.poiseRecovery],[13200,102,86,.08,86,130,8]);assert.equal(m.weaponStyle,"heavySaber");assert.equal(m.bodyScale,1.1);assert.equal(m.idleStance,"cheolsanse");
-  const expected={ironSweep:["SLASH",1.45,720,900,28],fallingPeak:["HEAVY",1.75,1120,1380,46],ironAdvance:["IMPACT",1.28,650,820,52],ironBreath:["RECOVER",1.05,0,0,0]};
+  const expected={ironSweep:["SLASH",1.45,720,900,28],fallingPeak:["HEAVY",1.75,1120,1380,46],ironAdvance:["IMPACT",1.28,650,820,52],ironFeint:["FEINT",1.61,0,0,0],ironBreath:["RECOVER",1.05,0,0,0]};
   for(const [id,row] of Object.entries(expected)){const s=skill(id);assert.deepEqual([s.attackType,s.duration,...s.damage,s.poiseDamage],row,id);}
 });
 
 test("three-step AI, pressure cycle, recovery insertion, and F8 are deterministic",()=>{
-  const game=makeGame(),ai=game.combat.mujin;assert.deepEqual(Array.from(ai.order),["ironSweep","fallingPeak","ironAdvance"]);assert.equal(game.combat.intent.id,"ironSweep");assert.equal(ai.label,"철산도 1/3");
-  ai.advanceAfter(skill("ironSweep"));assert.equal(game.combat.intent.id,"fallingPeak");ai.advanceAfter(skill("fallingPeak"));assert.equal(game.combat.intent.id,"ironAdvance");
-  game.player.poise=39;ai.advanceAfter(skill("ironAdvance"));assert.deepEqual(Array.from(ai.order),["ironAdvance","ironSweep","fallingPeak"]);assert.equal(game.combat.intent.id,"ironAdvance");
+  const game=makeGame(),ai=game.combat.mujin;assert.deepEqual(Array.from(ai.order),["ironSweep","fallingPeak","ironFeint"]);assert.equal(game.combat.intent.id,"ironSweep");assert.equal(ai.label,"철산도 1/3");
+  ai.advanceAfter(skill("ironSweep"));assert.equal(game.combat.intent.id,"fallingPeak");ai.advanceAfter(skill("fallingPeak"));assert.equal(game.combat.intent.id,"ironFeint");
+  game.player.poise=39;ai.advanceAfter(skill("ironFeint"));assert.deepEqual(Array.from(ai.order),["ironAdvance","ironSweep","ironFeint"]);assert.equal(game.combat.intent.id,"ironAdvance");
   ai.forceNext();assert.equal(game.combat.intent.id,"ironSweep");assert.equal(ai.label,"철산도 2/3");
   game.enemy.poise=34;ai.prepareNext();assert.equal(game.combat.intent.id,"ironBreath");assert.equal(ai.label,"기세 회복");const heldStep=ai.step;ai.advanceAfter(skill("ironBreath"));assert.equal(ai.step,heldStep);assert.equal(game.combat.intent.id,"ironSweep");ai.prepareNext();assert.notEqual(game.combat.intent.id,"ironBreath","recovery cannot repeat immediately");
 });
@@ -49,7 +49,7 @@ test("heavy saber tip stays hand-coupled and heavy parry sparks at the live midp
 });
 
 test("all Mujin timelines finish with positions, poses, and camera state restored",()=>{
-  for(const id of ["ironSweep","fallingPeak","ironAdvance","ironBreath"]){const game=makeGame(),combat=game.combat,enemy=game.enemy,player=game.player;player.guard=id==="fallingPeak"?"evade":null;const runner=new W.EnemySkillRunner(combat,enemy,player,skill(id));combat.runner=runner;let finished=false;combat.skillFinished=()=>{finished=true;combat.runner=null;};for(let elapsed=0;elapsed<2.2&&!finished;elapsed+=.02){runner.update(.02);if(runner.awaitingResponse)runner.acceptResponse(null);}assert.equal(finished,true,id);assert.equal(enemy.x,enemy.baseX,id);assert.equal(enemy.y,enemy.baseY,id);assert.equal(enemy.side,-1,id);assert.equal(enemy.poseOverride,null,id);assert.equal(player.x,player.baseX,id);assert.equal(player.y,player.baseY,id);assert.equal(player.poseOverride,null,id);}
+  for(const id of ["ironSweep","fallingPeak","ironAdvance","ironFeint","ironBreath"]){const game=makeGame(),combat=game.combat,enemy=game.enemy,player=game.player;player.guard=id==="fallingPeak"?"evade":null;if(skill(id).feint)combat.setEnemyIntent(skill(id));const runner=new W.EnemySkillRunner(combat,enemy,player,skill(id));combat.runner=runner;let finished=false;combat.skillFinished=()=>{finished=true;combat.runner=null;};for(let elapsed=0;elapsed<2.2&&!finished;elapsed+=.02){runner.update(.02);if(runner.awaitingResponse)runner.acceptResponse(null);}assert.equal(finished,true,id);assert.equal(enemy.x,enemy.baseX,id);assert.equal(enemy.y,enemy.baseY,id);assert.equal(enemy.side,-1,id);assert.equal(enemy.poseOverride,null,id);assert.equal(player.x,player.baseX,id);assert.equal(player.y,player.baseY,id);assert.equal(player.poseOverride,null,id);}
 });
 
 test("ironBreath restores exactly 28 poise and does not damage the player",()=>{

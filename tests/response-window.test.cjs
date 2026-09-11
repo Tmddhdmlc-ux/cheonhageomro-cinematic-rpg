@@ -17,12 +17,13 @@ function makeGame(config=W.ENEMIES.yama){
     audio:{unlock:noop,tone:noop,slash:noop,hit:noop,breakPoise:noop,clash:noop,dash:noop,charge:noop,thunder:noop},shell:{classList:{add:noop,remove:noop,toggle:noop}},updateUI:noop,setMessage(message){calls.messages.push(message);},showSkillTitle:noop,callout:noop,cinematic:noop,flash:noop};
   game.player=new W.Character(W.PLAYER_DATA,335,476);game.enemy=new W.Character(config.character,945,476);game.combat=new W.Combat(game);return game;
 }
-function start(game,id){const skill=game.combat.enemySkills.find(item=>item.id===id);const runner=new W.EnemySkillRunner(game.combat,game.enemy,game.player,skill);game.combat.runner=runner;return runner;}
+function start(game,id){const skill=game.combat.enemySkills.find(item=>item.id===id);if(skill.feint)game.combat.setEnemyIntent(skill);const runner=new W.EnemySkillRunner(game.combat,game.enemy,game.player,skill);game.combat.runner=runner;return runner;}
 
-test("all six attack cues stop exactly once even when a frame skips past them",()=>{
+test("all eight attack cues stop exactly once even when a frame skips past them",()=>{
   for(const [config,id,cue] of [
     [W.ENEMIES.yama,"darkSlash",.33],[W.ENEMIES.yama,"darkChain",.44],[W.ENEMIES.yama,"ghostThrust",.46],
-    [W.ENEMIES.mujin,"ironSweep",.52],[W.ENEMIES.mujin,"fallingPeak",.64],[W.ENEMIES.mujin,"ironAdvance",.40]
+    [W.ENEMIES.yama,"darkFeint",.52],
+    [W.ENEMIES.mujin,"ironSweep",.52],[W.ENEMIES.mujin,"fallingPeak",.64],[W.ENEMIES.mujin,"ironAdvance",.40],[W.ENEMIES.mujin,"ironFeint",.58]
   ]){
     const game=makeGame(config),runner=start(game,id);runner.update(cue+.45);assert.equal(runner.awaitingResponse,true,id);assert.equal(runner.t,cue,id);assert.equal(game.combat.awaitingResponse,true,id);runner.update(2);assert.equal(runner.t,cue,id);assert.equal(game.combat.chooseResponse(null),true,id);assert.equal(game.combat.chooseResponse("counter"),false,id);runner.update(.2);assert.ok(runner.t>cue,id);assert.equal(runner.cueHandled,true,id);
   }
