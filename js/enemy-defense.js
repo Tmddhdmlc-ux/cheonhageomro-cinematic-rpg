@@ -17,6 +17,31 @@
 
   class EnemyDefenseController{
     constructor(combat){this.c=combat;this.active=null;}
+    startBind(target,attacker,snapshot,runner){
+      if(this.active)this.cancel();
+      const poses=W.SWORD_BIND_POSES,heavy=target.weaponStyle==="heavySaber",targetPose=heavy?poses.heavyBind:poses.enemyBind;
+      const r={type:"bind",target,attacker,snapshot,runner,targetFrom:target.currentPose(),attackerFrom:attacker.currentPose(),targetOriginX:target.x,targetOriginY:target.y,attackerOriginX:runner?.ax??attacker.baseX,attackerOriginY:runner?.ay??attacker.baseY,targetPose,enemyChoice:null};
+      attacker.setPose(poses.playerBind);target.setPose(targetPose);this.active=r;this.alignBind(r);
+      const point=this.bindPoint(r);this.c.effects.spark(point.x,point.y,"#f4d59a",26,1.12);this.c.effects.reactionLabel?.(point.x,point.y-34,"合劍","다음 수를 고르십시오","bind");this.c.audio.clash?.();this.c.hitStop=Math.max(this.c.hitStop,.09);this.c.camera.focusBetween?.(attacker,target,1.08);
+      return true;
+    }
+    alignBind(r){
+      const a=r.attacker.getSwordTip(),b=r.target.getSwordTip(),dx=b.x-a.x,dy=b.y-a.y;
+      r.attacker.x+=dx*.5;r.target.x-=dx*.5;r.attacker.y+=dy*.5;r.target.y-=dy*.5;r.bindAttackerX=r.attacker.x;r.bindAttackerY=r.attacker.y;r.bindTargetX=r.target.x;r.bindTargetY=r.target.y;
+    }
+    bindPoint(r=this.active){const a=r.attacker.getSwordTip(),b=r.target.getSwordTip();return{x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
+    revealBind(enemyChoice){
+      const r=this.active;if(!r||r.type!=="bind")return false;r.enemyChoice=enemyChoice;const poses=W.SWORD_BIND_POSES,heavy=r.target.weaponStyle==="heavySaber";r.revealPose=heavy?(enemyChoice==="guard"?poses.heavyGuard:poses.heavyLure):(enemyChoice==="guard"?poses.enemyGuard:poses.enemyLure);r.target.setPose(r.revealPose);return true;
+    }
+    animateBind(playerChoice,outcome,progress){
+      const r=this.active;if(!r||r.type!=="bind")return false;const poses=W.SWORD_BIND_POSES,strike=U.ease(U.clamp(progress/.48,0,1)),recover=U.ease(U.clamp((progress-.46)/.54,0,1));
+      const playerPose=playerChoice==="press"?poses.playerPress:playerChoice==="shift"?poses.playerShift:poses.playerRecall,enemyPose=r.revealPose||r.targetPose;
+      const playerDrive=playerChoice==="recall"?-30:outcome==="win"?(playerChoice==="press"?28:20):-16;
+      const enemyYield=playerChoice==="recall"?0:outcome==="win"?22:-8;
+      r.attacker.x=U.lerp(r.bindAttackerX+r.attacker.side*playerDrive*strike,r.attackerOriginX,recover);r.attacker.y=U.lerp(r.bindAttackerY,r.attackerOriginY,recover);
+      r.target.x=U.lerp(r.bindTargetX+r.attacker.side*enemyYield*strike,r.targetOriginX,recover);r.target.y=U.lerp(r.bindTargetY,r.targetOriginY,recover);
+      r.attacker.setPose(mix(playerPose,r.attackerFrom,recover));r.target.setPose(mix(enemyPose,r.targetFrom,recover));return true;
+    }
     start(target,attacker,snapshot){
       const type=snapshot?.reactionType,meta=META[type];
       if(!meta||snapshot.reactionShown||target.hp<=0||target.broken)return false;
@@ -37,6 +62,7 @@
     }
     update(dt){
       const r=this.active;if(!r)return;
+      if(r.type==="bind"){if(this.c.over||this.c.runner!==r.runner)this.cancel();return;}
       if(this.c.over||r.target.hp<=0||r.target.broken||r.target.down>0||r.target.hitTime>0||this.c.runner?.a===r.target){this.cancel(r.target);return;}
       r.t+=dt;const q=U.clamp(r.t/r.meta.duration,0,1),recover=U.clamp((q-.38)/.62,0,1);
       if(r.type==="sidestep")r.target.x=r.originX+r.offset*(1-U.ease(recover));
@@ -46,6 +72,9 @@
     }
     cancel(target=null){
       const r=this.active;if(!r||target&&r.target!==target)return false;
+      if(r.type==="bind"){
+        r.attacker.x=r.attackerOriginX;r.attacker.y=r.attackerOriginY;r.target.x=r.targetOriginX;r.target.y=r.targetOriginY;r.attacker.clearPose();r.target.clearPose();this.c.camera.release?.();this.c.camera.reset?.();this.active=null;return true;
+      }
       r.target.x=r.originX;r.target.y=r.originY;r.target.clearPose();this.active=null;return true;
     }
   }

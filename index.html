@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>천하검로 v0.9 — 허초와 변초</title>
+  <title>천하검로 v0.10 — 합검 수싸움</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="styles.css?v=0.9.0" />
+  <link rel="stylesheet" href="styles.css?v=0.10.0" />
 </head>
 <body>
   <main id="game-shell" aria-label="천하검로 전투 화면">
@@ -74,6 +74,15 @@
     <div id="flash"></div>
     <div id="message"></div>
     <aside id="response-banner" aria-live="assertive" aria-hidden="true"><strong>RESPONSE / 應手</strong><span>초식 전개 중 · 응수를 선택하십시오</span></aside>
+    <aside id="bind-panel" aria-live="assertive" aria-hidden="true">
+      <header><strong>合劍 · 다음 수를 고르십시오</strong><span id="bind-history">아직 읽힌 수 없음</span></header>
+      <div id="bind-enemy-response" aria-hidden="true"></div>
+      <div class="bind-choices">
+        <button type="button" data-bind-choice="press"><kbd>E</kbd><strong>壓劍 · 압검</strong><span>고수를 누름 · 유인에 패배</span></button>
+        <button type="button" data-bind-choice="shift"><kbd>W</kbd><strong>變劍 · 변검</strong><span>유인을 벰 · 고수에 패배</span></button>
+        <button type="button" data-bind-choice="recall"><kbd>SPACE</kbd><strong>回劍 · 회검</strong><span>안전 종료 · 추가 이득 없음</span></button>
+      </div>
+    </aside>
 
     <section id="command-panel">
       <header>
@@ -86,7 +95,7 @@
       </div>
       <footer>
         <span><kbd>1—5</kbd> 기술 즉시 사용</span>
-        <span><kbd>W/E/Space</kbd> 응수 구간 선택</span>
+        <span><kbd>W/E/Space</kbd> 응수·합검 선택</span>
         <span><kbd>F1</kbd> HP 회복</span>
         <span><kbd>F2</kbd> 내력 회복</span>
         <span><kbd>F3</kbd> 적 회복</span>
@@ -102,17 +111,17 @@
     <div id="tooltip" role="tooltip"></div>
   </main>
 
-  <script src="js/data.js?v=0.9.0"></script>
-  <script src="js/camera.js?v=0.9.0"></script>
-  <script src="js/audio.js?v=0.9.0"></script>
-  <script src="js/effects.js?v=0.9.0"></script>
-  <script src="js/character.js?v=0.9.0"></script>
-  <script src="js/enemy-defense.js?v=0.9.0"></script>
-  <script src="js/boss-phase.js?v=0.9.0"></script>
-  <script src="js/mujin.js?v=0.9.0"></script>
-  <script src="js/skills.js?v=0.9.0"></script>
-  <script src="js/defense.js?v=0.9.0"></script>
-  <script src="js/combat.js?v=0.9.0"></script>
-  <script src="js/main.js?v=0.9.0"></script>
+  <script src="js/data.js?v=0.10.0"></script>
+  <script src="js/camera.js?v=0.10.0"></script>
+  <script src="js/audio.js?v=0.10.0"></script>
+  <script src="js/effects.js?v=0.10.0"></script>
+  <script src="js/character.js?v=0.10.0"></script>
+  <script src="js/enemy-defense.js?v=0.10.0"></script>
+  <script src="js/boss-phase.js?v=0.10.0"></script>
+  <script src="js/mujin.js?v=0.10.0"></script>
+  <script src="js/skills.js?v=0.10.0"></script>
+  <script src="js/defense.js?v=0.10.0"></script>
+  <script src="js/combat.js?v=0.10.0"></script>
+  <script src="js/main.js?v=0.10.0"></script>
 </body>
 </html>

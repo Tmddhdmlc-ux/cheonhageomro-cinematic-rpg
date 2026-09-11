@@ -25,7 +25,7 @@
   };
 
   class SkillRunner{
-    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;const active=target===combat.enemy&&target.hp>0&&!target.broken&&!!combat.opening;this.opening=W.evaluateOpening(combat.opening,skill.attackType,active);this.chain=skill.id==="basic"&&combat.planBasicChain?combat.planBasicChain(this.opening):{triggered:false,initiative:false,critBonus:0,reason:"연격 25%"};this.duration=this.chain.triggered?W.BASIC_CHAIN.duration:skill.duration;this.setup();}
+    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;this.bindStarted=false;this.bindChoice=null;this.bindOutcome=null;this.bindTime=0;const active=target===combat.enemy&&target.hp>0&&!target.broken&&!!combat.opening;this.opening=W.evaluateOpening(combat.opening,skill.attackType,active);this.chain=skill.id==="basic"&&combat.planBasicChain?combat.planBasicChain(this.opening):{triggered:false,initiative:false,critBonus:0,reason:"연격 25%"};this.duration=this.chain.triggered?W.BASIC_CHAIN.duration:skill.duration;this.setup();}
     once(id,fn){if(!this.events.has(id)){this.events.add(id);fn();}}
     setup(){
       this.a.clearPose();
@@ -33,9 +33,17 @@
       if(this.s.id==="plum")this.c.camera.pan(this.ax,this.ay-105,1.14);
       if(this.s.id==="thunder"){this.c.cinematic(true);this.c.camera.pan(this.ax,this.ay-120,1.42);this.c.audio.charge();}
     }
-    update(dt){this.t+=dt;const fn=this[this.s.id]||this.basic;fn.call(this,this.t);if(!this.done&&this.t>=this.duration)this.finish();}
+    update(dt){if(this.bindStarted)return this.updateBind(dt);this.t+=dt;const fn=this[this.s.id]||this.basic;fn.call(this,this.t);if(!this.done&&!this.bindStarted&&this.t>=this.duration)this.finish();}
     fxHit(opts={}){this.c.hit(this.a,this.b,this.s,{...opts,openingSnapshot:this.opening});}
     poseSegment(a,b,x,y){this.a.setPose(mix(a,b,phase(this.t,x,y)));}
+    startBind(){if(this.bindStarted||this.done)return false;this.bindStarted=true;this.bindTime=0;const opened=this.c.enemyDefense.startBind(this.b,this.a,this.opening,this);if(!opened)this.bindStarted=false;return opened;}
+    acceptBindChoice(choice){if(!this.bindStarted||this.bindChoice||this.done)return false;const outcome=this.c.lockSwordBindChoice(this,choice);if(!outcome)return false;this.bindChoice=choice;this.bindOutcome=outcome;this.bindTime=0;return true;}
+    updateBind(dt){
+      if(this.done||!this.bindChoice)return;this.bindTime+=dt;const cfg=W.SWORD_BIND;
+      if(this.bindTime>=cfg.revealDelay)this.once("bindResolve",()=>this.c.resolveSwordBind(this));
+      if(this.bindTime>=cfg.revealDelay)this.c.enemyDefense.animateBind(this.bindChoice,this.bindOutcome,phase(this.bindTime,cfg.revealDelay,cfg.revealDelay+cfg.resolveDuration));
+      if(this.bindTime>=cfg.revealDelay+cfg.resolveDuration)this.finish();
+    }
     basic(t){
       if(t<.14)this.poseSegment(P.idle,P.basicWind,0,.14);
       else if(t<.31){this.poseSegment(P.basicWind,P.basicHit,.14,.31);this.a.x=U.lerp(this.ax,this.bx-this.aside*165,U.ease(phase(t,.14,.31)));this.once("dash",()=>{this.c.audio.dash();this.c.effects.dust(this.ax,this.ay,this.aside,6);});}
@@ -45,7 +53,7 @@
       else if(t<.7){this.poseSegment(P.basicChainWind,P.basicChainHit,.48,.7);this.a.x=U.lerp(this.a.x,this.bx-this.aside*145,U.ease(phase(t,.48,.7)));}
       else if(t<.8)this.a.setPose(P.basicChainHit);
       else{this.poseSegment(P.basicChainHit,P.idle,.8,W.BASIC_CHAIN.duration);this.a.x=U.lerp(this.a.x,this.ax,U.ease(phase(t,.8,W.BASIC_CHAIN.duration)));}
-      if(t>=.29)this.once("hit",()=>{this.c.effects.slash(this.b.x,this.b.y-103,.12,"#d9fff5",115,.2);this.fxHit({hitStop:.055,power:.75,knock:70});if(this.b.hp<=0)this.finish();});
+      if(t>=.29)this.once("hit",()=>{this.c.effects.slash(this.b.x,this.b.y-103,.12,"#d9fff5",115,.2);this.fxHit({hitStop:.055,power:.75,knock:70,bindEligible:true});if(this.b.hp<=0)this.finish();});
       if(!this.done&&this.chain.triggered&&t>=.69)this.once("chainHit",()=>{this.c.game.setMessage(this.chain.initiative?"先機連斬":"연격",620);this.c.effects.slash(this.b.x,this.b.y-105,-.48,"#c9f5ed",92,.18);this.fxHit({hitStop:.052,power:.68,knock:55,damageScale:W.BASIC_CHAIN.damageScale,poiseScale:W.BASIC_CHAIN.poiseScale,critChance:Math.min(1,this.a.crit+this.chain.critBonus),multi:true});});
     }
     meteor(t){
@@ -87,7 +95,7 @@
       else {this.poseSegment(P.land,P.idle,3.15,3.75);this.a.x=U.lerp(this.a.x,this.ax,U.ease(phase(t,3.15,3.75)));this.c.camera.reset();}
       if(t>=2.54)this.once("impact",()=>{const finisher=this.b.broken;this.c.cinematicRate=1;this.c.flash();this.c.audio.thunder();this.c.effects.shockwave(this.b.x,this.by-12,"#d6fbff",finisher?380:310,.8);this.c.effects.shockwave(this.b.x,this.by-14,"#84def5",finisher?230:190,.55);for(let i=0;i<(finisher?8:5);i++)this.c.effects.lightning(this.b.x+U.rand(-150,150),this.by-U.rand(180,330),this.b.x+U.rand(-55,55),this.by-15,.24);this.c.effects.spark(this.b.x,this.by-50,"#c9f9ff",finisher?48:35,1.6);this.fxHit({hitStop:finisher?.16:.155,power:finisher?2.65:2.25,knock:finisher?430:370,down:true,final:true,delayNumber:finisher?.22:0});this.c.camera.shake(finisher?46:38,.48);});
     }
-    finish(){if(this.done)return;this.done=true;this.c.cinematicRate=1;this.a.x=this.ax;this.a.y=this.ay;this.a.side=this.aside;this.a.clearPose();this.c.camera.release();this.c.camera.reset();this.c.cinematic(false);this.c.skillFinished(this);}
+    finish(){if(this.done)return;this.done=true;if(this.bindStarted)this.c.enemyDefense.cancel();this.c.cinematicRate=1;this.a.x=this.ax;this.a.y=this.ay;this.a.side=this.aside;this.a.clearPose();this.c.camera.release();this.c.camera.reset();this.c.cinematic(false);this.c.skillFinished(this);}
   }
   W.SkillRunner=SkillRunner;
 })(window.Wuxia);
