@@ -7,22 +7,33 @@
       this.enemyConfig=game.enemyConfig||W.ENEMIES?.yama||{skills:W.ENEMY_SKILLS,openings:W.ENEMY_OPENINGS,bossPhase:true};this.enemySkills=this.enemyConfig.skills||W.ENEMY_SKILLS;this.enemyOpenings=this.enemyConfig.openings||W.ENEMY_OPENINGS;
       this.runner=null;this.turn="player";this.ai=true;this.slow=false;this.wait=0;this.hitStop=0;this.over=false;this.round=1;this.intent=null;this.intentIndex=0;this.opening=null;this.deferred=[];
       this.playerHabits={counter:0,evade:0,breathe:0};
+      this.awaitingResponse=false;this.responseSkillId=null;this.selectedResponse=null;this.resolvedOutcome=null;this.initiative=0;this.basicChainPity=0;this.basicChainChance=W.BASIC_CHAIN.baseChance;this.basicChainTriggered=false;this.random=()=>Math.random();
       this.phase=new W.BossPhaseController(this);
       this.mujin=this.enemyConfig.ai?.type==="fixedCycle"&&W.MujinIntentController?new W.MujinIntentController(this):null;
       this.enemyDefense=new W.EnemyDefenseController(this);
     }
     reset(){
-      this.enemyDefense.cancel();this.player.reset();this.enemy.reset();this.effects.clear();this.runner=null;this.hitStop=0;this.wait=0;this.deferred=[];this.over=false;this.round=1;this.intent=null;this.opening=null;this.playerHabits={counter:0,evade:0,breathe:0};
+      this.enemyDefense.cancel();this.player.reset();this.enemy.reset();this.effects.clear();this.runner=null;this.hitStop=0;this.wait=0;this.deferred=[];this.over=false;this.round=1;this.intent=null;this.opening=null;this.playerHabits={counter:0,evade:0,breathe:0};this.clearMindgameState();
       this.phase.reset();this.mujin?.reset();this.game.shell.classList.remove?.("phase-transition");this.turn=this.player.speed>=this.enemy.speed?"player":"enemy";this.camera.reset(true);this.cinematic(false);this.selectEnemyIntent(true);this.game.updateUI();this.game.setMessage("비무를 시작합니다",850);if(this.turn==="enemy")this.wait=.7;
     }
-    dispose(){this.enemyDefense.cancel();this.runner?.a?.clearPose?.();this.runner?.b?.clearPose?.();this.runner=null;this.deferred=[];this.wait=0;this.hitStop=0;this.over=true;this.turn="inactive";this.effects.clear();this.camera.release?.();this.camera.reset(true);this.cinematic(false);}
+    dispose(){this.enemyDefense.cancel();this.runner?.a?.clearPose?.();this.runner?.b?.clearPose?.();this.runner=null;this.deferred=[];this.wait=0;this.hitStop=0;this.over=true;this.turn="inactive";this.clearMindgameState();this.effects.clear();this.camera.release?.();this.camera.reset(true);this.cinematic(false);}
     useSkill(id){
       if((this.game.mode&&this.game.mode!=="duel")||this.over||this.runner||this.turn!=="player")return false;const s=W.SKILLS.find(x=>x.id===id);if(!s)return false;if(this.player.mp<s.cost){this.game.setMessage("내력이 부족합니다",800);this.audio.tone("square",90,70,.12,.08);return false;}
-      this.audio.unlock();this.player.mp-=s.cost;this.runner=new W.SkillRunner(this,this.player,this.enemy,s);this.game.updateUI();return true;
+      this.audio.unlock();this.player.mp-=s.cost;if(id!=="basic")this.basicChainTriggered=false;this.runner=new W.SkillRunner(this,this.player,this.enemy,s);this.game.updateUI();return true;
     }
     useTactic(id){
-      if((this.game.mode&&this.game.mode!=="duel")||this.over||this.runner||this.turn!=="player")return false;const t=W.TACTICS.find(x=>x.id===id);if(!t)return false;this.audio.unlock();this.playerHabits[id]=(this.playerHabits[id]||0)+1;this.runner=new W.TacticRunner(this,this.player,this.enemy,t);this.game.updateUI();return true;
+      if(id==="counter"||id==="evade")return this.chooseResponse(id);
+      if((this.game.mode&&this.game.mode!=="duel")||this.over||this.runner||this.turn!=="player"||id!=="breathe")return false;const t=W.TACTICS.find(x=>x.id===id);if(!t)return false;this.audio.unlock();this.playerHabits.breathe++;this.runner=new W.TacticRunner(this,this.player,this.enemy,t);this.game.updateUI();return true;
     }
+    clearMindgameState(){this.awaitingResponse=false;this.responseSkillId=null;this.selectedResponse=null;this.resolvedOutcome=null;this.initiative=0;this.basicChainPity=0;this.basicChainChance=W.BASIC_CHAIN.baseChance;this.basicChainTriggered=false;this.player.guard=null;}
+    openResponse(r){if(this.over||this.runner!==r)return false;this.awaitingResponse=true;this.responseSkillId=r.s.id;this.selectedResponse=null;this.resolvedOutcome=null;this.game.updateUI();return true;}
+    chooseResponse(id){if(!this.awaitingResponse||this.over||this.runner?.a!==this.enemy)return false;return this.runner.acceptResponse(id);}
+    onResponseSelected(r){if(this.runner!==r)return;this.awaitingResponse=false;this.responseSkillId=r.s.id;this.selectedResponse=r.selectedResponse;this.resolvedOutcome=r.resolvedOutcome;if(r.guard)this.playerHabits[r.guard]=(this.playerHabits[r.guard]||0)+1;this.audio.unlock();this.game.updateUI();}
+    closeResponse(r){if(r&&this.runner!==r)return;this.awaitingResponse=false;this.responseSkillId=null;this.selectedResponse=null;this.resolvedOutcome=null;this.player.guard=null;}
+    responsePreview(id){const r=this.runner;if(!this.awaitingResponse||!r?.s?.responses)return"응수 구간에서 선택";const rule=r.s.responses[id];if(!rule)return"효과 없음";if(rule.minPoise!=null&&this.player.poise<rule.minPoise)return`기세 ${rule.minPoise} 필요 · 현재 ${Math.floor(this.player.poise)}`;if(rule.outcome==="parry")return"확정 파훼";if(rule.outcome==="evade")return"확정 회피";return id==="evade"?"회피 실패":"반격 실패";}
+    grantInitiative(){this.initiative=1;this.game.setMessage("先機 · 다음 기본검 연격 확정",950);this.audio.tone?.("sine",760,1180,.16,.05);this.game.updateUI();}
+    previewBasicChain(opening){const cfg=W.BASIC_CHAIN,eligible=opening?.result!=="resisted";if(this.initiative)return{chance:1,reason:"선기 확정",initiative:true};if(eligible&&this.basicChainPity>=cfg.pityMisses)return{chance:1,reason:"누적 확정",initiative:false};if(!eligible)return{chance:0,reason:"검세에 막힘 · 0%",initiative:false};const chance=cfg.baseChance+(opening?.result==="exploit"?cfg.exploitBonus:0);return{chance,reason:`연격 ${Math.round(chance*100)}%`,initiative:false};}
+    planBasicChain(opening){const plan=this.previewBasicChain(opening),triggered=plan.chance>=1||plan.chance>0&&this.random()<plan.chance;this.basicChainChance=plan.chance;this.basicChainTriggered=triggered;if(plan.initiative)this.initiative=0;if(triggered)this.basicChainPity=0;else if(plan.chance>0)this.basicChainPity++;return{...plan,triggered,critBonus:plan.initiative?W.BASIC_CHAIN.initiativeCritBonus:0};}
     setEnemyIntent(skill){this.intent=skill||null;this.intentIndex=skill?this.enemySkills.indexOf(skill):0;this.opening=W.openingForIntent(skill,this.enemyOpenings);this.enemy.setOpening(this.opening);return skill;}
     selectEnemyIntent(forceCycle=false){
       if(this.mujin)return this.mujin.sync();
@@ -44,7 +55,7 @@
     }
     enemyAttack(){
       if(this.over||this.runner||!this.ai)return;
-      this.enemyDefense.cancel(this.enemy);
+      this.enemyDefense.cancel(this.enemy);this.player.guard=null;
       if(this.enemy.broken){this.enemy.broken=false;this.enemy.poise=Math.max(42,this.enemy.poise);}
       this.mujin?.prepareNext();const s=this.intent||this.selectEnemyIntent();this.phase.beforeEnemyAttack(s);this.runner=new W.EnemySkillRunner(this,this.enemy,this.player,s);this.game.updateUI();
     }
@@ -53,7 +64,7 @@
       const resisted=opening?.result==="resisted",damageMultiplier=opening?.damageMultiplier??1,poiseMultiplier=opening?.poiseMultiplier??1,firstReaction=resisted&&!opening.reactionShown;
       const alreadyBroken=target.broken,range=skill.damage||[500,700],scale=(opt.damageScale||1)*damageMultiplier,atk=attacker.attack/100;
       const effectiveDefense=target.defense*(alreadyBroken ? .65 : 1),def=100/(100+effectiveDefense*.45),breakBonus=alreadyBroken?1.3:1;
-      let amount=Math.round(U.rand(range[0],range[1])*atk*def*scale*breakBonus);const crit=Math.random()<attacker.crit;if(crit)amount=Math.round(amount*1.65);
+      let amount=Math.round(U.rand(range[0],range[1])*atk*def*scale*breakBonus);const crit=this.random()<(opt.critChance??attacker.crit);if(crit)amount=Math.round(amount*1.65);
       target.hp=Math.max(0,target.hp-amount);
       const poiseHit=Math.max(0,Math.round((skill.poiseDamage||0)*(opt.poiseScale??1)*poiseMultiplier));
       if(poiseHit>0&&!target.broken){target.poise=Math.max(0,target.poise-poiseHit);if(target.poise>0)this.effects.poise(target.x,target.y-92,poiseHit);}
@@ -84,7 +95,8 @@
     }
     skillFinished(r){
       this.runner=null;
-      if(r.b.hp<=0){this.enemyDefense.cancel(r.b);this.over=true;this.turn="over";const won=r.b===this.enemy,finisher=r.s?.id==="thunder"&&r.b.broken;if(finisher)this.defer(.5,()=>this.callout("勝","승리","parry"));if(this.game.finishDuel)this.game.finishDuel(won);else this.game.setMessage(won?(this.enemyConfig.victoryMessage||"승리 — 검로가 열렸습니다"):(this.enemyConfig.defeatMessage||"패배 — 호흡을 가다듬으십시오"),2600);this.game.updateUI();return;}
+      if(r.a===this.enemy)this.closeResponse();
+      if(r.b.hp<=0){this.enemyDefense.cancel(r.b);this.over=true;this.turn="over";this.awaitingResponse=false;this.initiative=0;this.basicChainPity=0;this.basicChainChance=W.BASIC_CHAIN.baseChance;this.basicChainTriggered=false;const won=r.b===this.enemy,finisher=r.s?.id==="thunder"&&r.b.broken;if(finisher)this.defer(.5,()=>this.callout("勝","승리","parry"));if(this.game.finishDuel)this.game.finishDuel(won);else this.game.setMessage(won?(this.enemyConfig.victoryMessage||"승리 — 검로가 열렸습니다"):(this.enemyConfig.defeatMessage||"패배 — 호흡을 가다듬으십시오"),2600);this.game.updateUI();return;}
       const earnedExtra=!!r.b.breakPending;
       if(r.a===this.player&&r.b===this.enemy)this.phase.armIfEligible();
       if(r.a===this.player){

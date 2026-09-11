@@ -44,11 +44,17 @@
       }
       if(this.t>=.86)this.finish();
     }
-    finish(){if(this.done)return;this.done=true;this.a.x=this.ax;this.a.clearPose();if(this.tactic.id!=="breathe")this.a.guard=this.tactic.id;this.c.skillFinished(this);}
+    finish(){if(this.done)return;this.done=true;this.a.x=this.ax;this.a.clearPose();this.a.guard=null;this.c.skillFinished(this);}
   }
 
   class EnemySkillRunner{
-    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.heavy=!!skill.heavy;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;this.guard=target.guard;this.startPoise=target.poise;this.failureReason="";this.responseRule=null;this.outcome=this.resolveOutcome();this.c.showSkillTitle(skill);if(skill.id==="darkFall")this.c.cinematic(true);}
+    constructor(combat,attacker,target,skill){
+      this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.heavy=!!skill.heavy;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;
+      this.responseCue=Number.isFinite(skill.responseCue)?skill.responseCue:null;this.cueHandled=false;this.awaitingResponse=false;this.responseChosen=false;this.selectedResponse=null;this.resolvedOutcome=null;this.responseDelay=0;this.responseLinkDuration=.15;
+      this.guard=null;this.startPoise=null;this.failureReason="";this.responseRule=null;this.outcome="hit";
+      if(target.guard){this.guard=target.guard;this.startPoise=target.poise;this.outcome=this.resolveOutcome();this.resolvedOutcome=this.outcome;this.selectedResponse=this.guard;this.responseChosen=true;this.cueHandled=true;}
+      this.c.showSkillTitle(skill);if(skill.id==="darkFall")this.c.cinematic(true);
+    }
     once(id,fn){if(!this.events.has(id)){this.events.add(id);fn();}}
     resolveOutcome(){
       if(!this.guard||this.s.attackType==="RECOVER")return"hit";
@@ -64,7 +70,23 @@
     }
     pose(a,b,x,y){this.a.setPose(mix(a,b,ph(this.t,x,y)));}
     clashPose(){return this.s.id==="fallingPeak"?POSES.peakStrike:this.s.id==="ironAdvance"?POSES.ironDrive:this.heavy?POSES.ironSweep:POSES.darkSlash;}
-    update(dt){this.t+=dt;(this[this.s.id]||this.darkSlash).call(this,this.t);if(this.t>=this.s.duration)this.finish();}
+    openResponseCue(){
+      if(this.cueHandled||this.responseCue==null)return false;
+      this.cueHandled=true;this.awaitingResponse=true;this.t=this.responseCue;(this[this.s.id]||this.darkSlash).call(this,this.t);this.c.openResponse?.(this);return true;
+    }
+    acceptResponse(id){
+      if(!this.awaitingResponse||this.responseChosen)return false;
+      this.responseChosen=true;this.awaitingResponse=false;this.selectedResponse=id||"none";this.guard=id==="counter"||id==="evade"?id:null;this.startPoise=this.b.poise;this.b.guard=this.guard;this.failureReason="";this.responseRule=null;this.outcome=this.resolveOutcome();this.resolvedOutcome=this.outcome;this.responseDelay=this.responseLinkDuration;
+      this.c.onResponseSelected?.(this);return true;
+    }
+    responseLink(progress){const target=this.guard==="counter"?POSES.guard:this.guard==="evade"?POSES.evade:base();this.b.setPose(mix(base(),target,progress));}
+    update(dt){
+      if(this.done||this.awaitingResponse)return;
+      if(this.responseDelay>0){const used=Math.min(dt,this.responseDelay);this.responseDelay-=used;this.responseLink(1-this.responseDelay/this.responseLinkDuration);if(this.responseDelay>0)return;dt-=used;}
+      const next=this.t+dt;
+      if(this.responseCue!=null&&!this.cueHandled&&next>=this.responseCue){this.openResponseCue();return;}
+      this.t=next;(this[this.s.id]||this.darkSlash).call(this,this.t);if(this.t>=this.s.duration)this.finish();
+    }
     impact(opt={}){
       this.b.guard=null;
       if(this.outcome==="parry"){this.parry();return;}
@@ -78,13 +100,13 @@
       this.once("parry",()=>{
         this.b.setPose(POSES.guard);this.a.setPose(this.heavy?this.clashPose():{...POSES.darkSlash,sword:-.55,arm:-.47});
         let at=this.a.getSwordTip(),bt=this.b.getSwordTip();this.a.x+=bt.x-at.x;at=this.a.getSwordTip();const clash={x:(at.x+bt.x)/2,y:(at.y+bt.y)/2};
-        this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.145:.11);this.c.camera.focusBetween(this.a,this.b,this.heavy?1.2:1.28);this.c.camera.punch(this.aside,this.heavy?18:14);this.c.camera.shake(this.heavy?22:18,this.heavy?.27:.22);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#fff0b2",this.heavy?38:32,this.heavy?1.65:1.4);this.c.effects.shockwave(clash.x,clash.y,"#fff1c4",this.heavy?88:72,this.heavy?.36:.3);this.c.callout("破招","파훼","parry");
+        this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.145:.11);this.c.camera.focusBetween(this.a,this.b,this.heavy?1.2:1.28);this.c.camera.punch(this.aside,this.heavy?18:14);this.c.camera.shake(this.heavy?22:18,this.heavy?.27:.22);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#fff0b2",this.heavy?38:32,this.heavy?1.65:1.4);this.c.effects.shockwave(clash.x,clash.y,"#fff1c4",this.heavy?88:72,this.heavy?.36:.3);this.c.callout("破招","파훼","parry");this.c.grantInitiative?.();
         if(this.responseRule?.poiseCost){const cost=this.responseRule.poiseCost;this.b.poise=Math.max(1,this.b.poise-cost);this.c.effects.poise(this.b.x,this.b.y-98,cost,"cost");this.c.game.updateUI();}
         this.c.defer(.2,()=>{this.b.setPose(POSES.counter);this.c.effects.slash(this.a.getTorsoPosition().x,this.a.getTorsoPosition().y,.15,"#dffff6",125,.22);this.c.hit(this.b,this.a,{damage:[430,570],poiseDamage:18},{hitStop:.07,power:.8,knock:95,final:false});});
       });
     }
     evade(){
-      this.once("evade",()=>{this.c.effects.afterimage(this.b,.3);this.b.x-=this.b.side*105;this.b.setPose({...POSES.evade,rootLift:9});this.c.audio.dash();this.c.camera.focusBetween(this.a,this.b,1.13);this.c.callout("回避","회피","evade");});
+      this.once("evade",()=>{this.c.effects.afterimage(this.b,.3);this.b.x-=this.b.side*105;this.b.setPose({...POSES.evade,rootLift:9});this.c.audio.dash();this.c.camera.focusBetween(this.a,this.b,1.13);this.c.callout("回避","회피","evade");this.c.grantInitiative?.();});
     }
     failedClash(){
       this.once("failedClash",()=>{this.b.setPose(POSES.guard);this.a.setPose(this.heavy?this.clashPose():{...POSES.darkSlash,sword:-.55,arm:-.47});let at=this.a.getSwordTip(),bt=this.b.getSwordTip();this.a.x+=bt.x-at.x;at=this.a.getSwordTip();const clash={x:(at.x+bt.x)/2,y:(at.y+bt.y)/2};this.c.hitStop=Math.max(this.c.hitStop,this.heavy?.12:.085);this.c.camera.focusBetween(this.a,this.b,1.2);this.c.audio.clash();this.c.effects.spark(clash.x,clash.y,"#ffd6b0",this.heavy?28:20,this.heavy?1.35:1.05);this.c.effects.shockwave(clash.x,clash.y,"#ffd0aa",this.heavy?70:52,this.heavy?.3:.24);});
@@ -193,7 +215,7 @@
       this.a.setPose(t<.25?mix(base(),POSES.breathe,ph(t,0,.25)):t<.7?POSES.breathe:mix(POSES.breathe,base(),ph(t,.7,.95)));
       if(t>.45)this.once("recover",()=>{this.a.poise=Math.min(this.a.maxPoise,this.a.poise+34);this.a.mp=Math.min(this.a.maxMp,this.a.mp+20);this.c.game.setMessage("염라가 사기를 가다듬습니다",850);this.c.game.updateUI();});
     }
-    finish(){if(this.done)return;this.done=true;this.a.x=this.ax;this.a.y=this.ay;this.a.side=this.aside;this.b.x=this.b.baseX;this.b.y=this.b.baseY;this.a.clearPose();this.b.clearPose();this.c.camera.release();this.c.camera.reset();this.c.cinematic(false);this.c.skillFinished(this);}
+    finish(){if(this.done)return;this.done=true;this.awaitingResponse=false;this.a.x=this.ax;this.a.y=this.ay;this.a.side=this.aside;this.b.x=this.b.baseX;this.b.y=this.b.baseY;this.a.clearPose();this.b.clearPose();this.c.closeResponse?.(this);this.c.camera.release();this.c.camera.reset();this.c.cinematic(false);this.c.skillFinished(this);}
   }
   W.TacticRunner=TacticRunner;W.EnemySkillRunner=EnemySkillRunner;
 })(window.Wuxia);

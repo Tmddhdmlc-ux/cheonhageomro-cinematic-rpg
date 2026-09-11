@@ -2,12 +2,14 @@
   "use strict";
 
   W.CONFIG = { width: 1280, height: 720, stageBottom: 540 };
+  W.normalizeCombatKey = key => key===" "||key==="Spacebar"?"SPACE":String(key||"").toUpperCase();
+  W.BASIC_CHAIN = { baseChance:.25, exploitBonus:.25, pityMisses:2, damageScale:.55, poiseScale:.50, initiativeCritBonus:.20, duration:1.08 };
 
   W.SKILLS = [
     {
       id: "basic", key: "1", rank: "일반 · ORDINARY", name: "기본검", hanja: "基本劍",
       cost: 0, power: 92, duration: 0.72, damage: [760, 930], poiseDamage: 14, attackType: "SLASH",
-      desc: "한 걸음 파고들어 허리 회전으로 이어지는 빠른 횡베기. 짧은 히트스톱과 함께 안정적인 피해를 줍니다."
+      desc: "한 걸음 파고드는 횡베기. 검세·누적 실패·선기에 따라 역방향 두 번째 검격이 이어집니다."
     },
     {
       id: "meteor", key: "2", rank: "상급 · SUPERIOR", name: "유성일섬", hanja: "流星一閃",
@@ -33,7 +35,7 @@
 
   W.ENEMY_SKILLS = [
     {
-      id:"darkSlash", name:"흑풍참", hanja:"黑風斬", attackType:"SLASH", duration:1.02, damage:[620,820], poiseDamage:13,
+      id:"darkSlash", name:"흑풍참", hanja:"黑風斬", attackType:"SLASH", duration:1.02, responseCue:.33, damage:[620,820], poiseDamage:13,
       intent:"빠른 대각선 베기", threat:"기세 피해 낮음", responseHint:"권장: 반격세",
       responses:{
         counter:{outcome:"parry"},
@@ -41,7 +43,7 @@
       }
     },
     {
-      id:"darkChain", name:"흑풍연환검", hanja:"黑風連環劍", attackType:"MULTI", duration:1.72, damage:[235,315], poiseDamage:27,
+      id:"darkChain", name:"흑풍연환검", hanja:"黑風連環劍", attackType:"MULTI", duration:1.72, responseCue:.44, damage:[235,315], poiseDamage:27,
       intent:"발을 바꾸는 삼연격", threat:"연속 공격", responseHint:"조건: 반격세 · 기세 50+",
       responses:{
         counter:{outcome:"parry",minPoise:50,poiseCost:20,failureOutcome:"guardFail",reason:"기세가 부족해 연환검을 버티지 못했습니다"},
@@ -49,7 +51,7 @@
       }
     },
     {
-      id:"ghostThrust", name:"귀영돌", hanja:"鬼影突", attackType:"THRUST", duration:1.36, damage:[1150,1460], poiseDamage:39,
+      id:"ghostThrust", name:"귀영돌", hanja:"鬼影突", attackType:"THRUST", duration:1.36, responseCue:.46, damage:[1150,1460], poiseDamage:39,
       intent:"방어선을 비집는 고속 찌르기", threat:"기세 피해 높음", responseHint:"권장: 유운보",
       responses:{
         counter:{outcome:"guardFail",reason:"찌르기가 검 안쪽을 관통했습니다"},
@@ -72,7 +74,7 @@
 
   W.MUJIN_SKILLS = [
     {
-      id:"ironSweep", name:"철산횡도", hanja:"鐵山橫刀", attackType:"SLASH", duration:1.45, damage:[720,900], poiseDamage:28, heavy:true,
+      id:"ironSweep", name:"철산횡도", hanja:"鐵山橫刀", attackType:"SLASH", duration:1.45, responseCue:.52, damage:[720,900], poiseDamage:28, heavy:true,
       intent:"뒷발과 허리를 감는 낮은 횡도", threat:"묵직한 기세 압박", responseHint:"반격세: 기세 65+ · 유운보 실패",
       responses:{
         counter:{outcome:"parry",minPoise:65,poiseCost:25,failureOutcome:"guardFail",reason:"기세가 부족해 중도의 무게에 눌렸습니다"},
@@ -80,7 +82,7 @@
       }
     },
     {
-      id:"fallingPeak", name:"낙봉개산", hanja:"落峰開山", attackType:"HEAVY", duration:1.75, damage:[1120,1380], poiseDamage:46, heavy:true,
+      id:"fallingPeak", name:"낙봉개산", hanja:"落峰開山", attackType:"HEAVY", duration:1.75, responseCue:.64, damage:[1120,1380], poiseDamage:46, heavy:true,
       intent:"낮춘 골반에서 시작하는 수직 내려베기", threat:"매우 높은 기세 피해", responseHint:"권장: 유운보 · 반격세 실패",
       responses:{
         counter:{outcome:"guardFail",reason:"도의 무게가 검과 무릎을 함께 눌렀습니다"},
@@ -88,7 +90,7 @@
       }
     },
     {
-      id:"ironAdvance", name:"철벽진", hanja:"鐵壁進", attackType:"IMPACT", duration:1.28, damage:[650,820], poiseDamage:52, heavy:true,
+      id:"ironAdvance", name:"철벽진", hanja:"鐵壁進", attackType:"IMPACT", duration:1.28, responseCue:.40, damage:[650,820], poiseDamage:52, heavy:true,
       intent:"도면과 어깨를 붙인 짧은 전진", threat:"최고 기세 피해", responseHint:"반격세: 기세 45+ · 유운보 실패",
       responses:{
         counter:{outcome:"parry",minPoise:45,poiseCost:15,failureOutcome:"guardFail",reason:"기세가 부족해 도면의 전진을 비틀지 못했습니다"},

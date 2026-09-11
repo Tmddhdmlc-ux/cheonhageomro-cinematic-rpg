@@ -63,6 +63,9 @@ body {
 .name-row { display: flex; justify-content: space-between; align-items: end; margin-bottom: 5px; }
 .name-row strong { font-family: serif; font-size: 17px; letter-spacing: .08em; text-shadow: 0 1px 5px #000; }
 .name-row span { color: #aeb9b7; font-size: 10px; letter-spacing: .1em; }
+#initiative-badge { display:none;width:max-content;margin:-1px 0 4px;padding:2px 7px;border:1px solid #c9b76899;background:#403718aa;color:#f0d982;font:800 8px/1.3 serif;letter-spacing:.08em;box-shadow:0 0 12px #d3b54c33; }
+#initiative-badge.show { display:block;animation:initiative-pulse 1.4s ease-in-out infinite; }
+@keyframes initiative-pulse { 50%{box-shadow:0 0 18px #e4ca624d;color:#fff0aa;} }
 #enemy-phase { display:inline-block;margin-left:6px;padding:2px 5px;border:1px solid #76635a;color:#b7a69e;font:700 8px/1 system-ui;letter-spacing:.06em;vertical-align:2px;transition:.25s; }
 #enemy-phase.active { border-color:#4d9695;color:#8fd1ce;background:#173335aa;box-shadow:0 0 9px #3c8f8f44; }
 #enemy-phase.elite { border-color:#829193;color:#c1d8d8;background:#243034cc;box-shadow:0 0 9px #8fb9bf33; }
@@ -120,6 +123,7 @@ body {
 .skill-btn strong { display: block; margin: 2px 0 2px; font: 700 13px serif; letter-spacing: .05em; white-space: nowrap; }
 .skill-btn .attack-type { display:block;color:#91aaa5;font:700 8px/1.35 system-ui;letter-spacing:.08em; }
 .skill-btn .attack-type em { display:none;margin-left:5px;color:#efd889;font-style:normal;letter-spacing:.06em; }
+.skill-btn[data-id="basic"] .attack-type em { display:inline; }
 .skill-btn.effective { border-color:#c8b96c;box-shadow:inset 0 0 18px #3ea58d20,0 0 8px #d8bd5c3d;background:linear-gradient(135deg,#23332fee,#0b1313ee); }
 .skill-btn.effective .attack-type { color:#8ed9c6; }
 .skill-btn.effective .attack-type em { display:inline; }
@@ -131,7 +135,7 @@ body {
 .skill-btn .seal { position: absolute; right: -12px; bottom: -22px; color: #bf4c4030; font: 700 62px serif; transform: rotate(-12deg); }
 
 #command-panel footer { display: flex; align-items: center; justify-content: center; gap: 16px; height: 29px; color: #697576; font-size: 9px; }
-#tactics { display:grid;grid-template-columns:repeat(3,1fr);gap:6px; }
+#tactics { display:grid;grid-template-columns:repeat(4,1fr);gap:6px; }
 .tactic-btn { position:relative;cursor:pointer;border:1px solid #4a625e;background:linear-gradient(180deg,#182624,#0a1112);color:#d8ddd6;padding:8px 5px 7px;text-align:center;transition:.15s; }
 .tactic-btn:hover:not(:disabled){border-color:#95c7b9;transform:translateY(-2px);background:linear-gradient(180deg,#213632,#0c1516);}
 .tactic-btn:disabled{cursor:not-allowed;filter:saturate(.2) brightness(.5);}
@@ -139,6 +143,8 @@ body {
 .tactic-btn strong{display:block;margin:7px 0 4px;font:700 13px serif;}
 .tactic-btn em{display:block;color:#72827e;font:normal 8px system-ui;}
 .tactic-btn.armed{border-color:#e1cb80;box-shadow:inset 0 0 18px #ceb95a24,0 0 8px #ceb95a44;}
+.tactic-btn.no-response { display:none;border-color:#745c55;background:linear-gradient(180deg,#2b211f,#110d0d); }
+.tactic-btn.no-response.show { display:block; }
 kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; border-radius: 2px; color: #9aa5a2; background: #11191a; font: 700 8px system-ui; }
 #ai-state, #slow-state { color: #70c5b3; }
 
@@ -193,6 +199,11 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 
 #message { position: absolute; left: 50%; top: 18%; transform: translate(-50%,-10px); opacity: 0; padding: 8px 18px; border: 1px solid #7b7050; background: #071012dd; color: #ddd3b4; font: 700 13px serif; letter-spacing: .12em; transition: .2s; }
 #message.show { opacity: 1; transform: translate(-50%,0); }
+
+#response-banner { position:absolute;z-index:12;left:50%;bottom:218px;display:flex;align-items:center;gap:13px;transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;padding:8px 16px;border:1px solid #d0b869;background:#0a1113e8;color:#ddd5bd;box-shadow:0 0 24px #c9aa4730;transition:.16s; }
+#response-banner.show { opacity:1;visibility:visible;transform:translate(-50%,0); }
+#response-banner strong { color:#f0d37a;font:800 10px system-ui;letter-spacing:.2em;white-space:nowrap; }
+#response-banner span { color:#c6cec9;font:700 11px serif;letter-spacing:.08em;white-space:nowrap; }
 
 #tooltip {
   position: fixed; z-index: 10; width: 250px; display: none; pointer-events: none;
