@@ -120,6 +120,9 @@ body {
 .skill-btn.effective { border-color:#c8b96c;box-shadow:inset 0 0 18px #3ea58d20,0 0 8px #d8bd5c3d;background:linear-gradient(135deg,#23332fee,#0b1313ee); }
 .skill-btn.effective .attack-type { color:#8ed9c6; }
 .skill-btn.effective .attack-type em { display:inline; }
+.skill-btn.resisted { border-color:#79534f;box-shadow:inset 0 0 14px #743c3622;background:linear-gradient(135deg,#241b1bee,#0d1011ee); }
+.skill-btn.resisted .attack-type { color:#aa7770; }
+.skill-btn.resisted .attack-type em { display:inline;color:#b98078; }
 .skill-btn .meta { display: flex; justify-content: space-between; color: #87918f; font-size: 9px; }
 .skill-btn .cost { color: #68b8cb; }
 .skill-btn .seal { position: absolute; right: -12px; bottom: -22px; color: #bf4c4030; font: 700 62px serif; transform: rotate(-12deg); }

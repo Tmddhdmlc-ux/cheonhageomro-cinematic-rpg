@@ -73,41 +73,52 @@
   W.ATTACK_TYPE_LABELS = {
     SLASH: "베기", THRUST: "찌르기", MULTI: "연격", ULTIMATE: "오의"
   };
+  W.OPENING_MULTIPLIERS = {
+    exploit: { damage: 1.10, poise: 1.50 },
+    resisted: { damage: .60, poise: .50 },
+    neutral: { damage: 1, poise: 1 }
+  };
 
   W.ENEMY_OPENINGS = {
     darkSlash: {
-      id: "crossGuard", name: "횡봉세", hanja: "橫封勢", weakTo: ["THRUST"],
+      id: "crossGuard", name: "횡봉세", hanja: "橫封勢", weakTo: ["THRUST"], resists: ["SLASH"], reactionType: "block",
       damageMultiplier: 1.10, poiseMultiplier: 1.50
     },
     ghostThrust: {
-      id: "needlePoint", name: "직침세", hanja: "直針勢", weakTo: ["SLASH"],
+      id: "needlePoint", name: "직침세", hanja: "直針勢", weakTo: ["SLASH"], resists: ["THRUST"], reactionType: "deflect",
       damageMultiplier: 1.10, poiseMultiplier: 1.50
     },
     darkChain: {
-      id: "flowingShadow", name: "유영세", hanja: "流影勢", weakTo: ["MULTI"],
+      id: "flowingShadow", name: "유영세", hanja: "流影勢", weakTo: ["MULTI"], resists: ["SLASH", "THRUST"], reactionType: "sidestep",
       damageMultiplier: 1.10, poiseMultiplier: 1.50
     },
     darkBreath: {
-      id: "openGate", name: "기문개방", hanja: "氣門開放", weakTo: ["SLASH", "THRUST", "MULTI"],
+      id: "openGate", name: "기문개방", hanja: "氣門開放", weakTo: ["SLASH", "THRUST", "MULTI"], resists: [], reactionType: null,
       damageMultiplier: 1.10, poiseMultiplier: 1.50
     },
     darkFall: {
-      id: "ultimateCharge", name: "절기축세", hanja: "絶技蓄勢", weakTo: ["SLASH", "THRUST", "MULTI"],
+      id: "ultimateCharge", name: "절기축세", hanja: "絶技蓄勢", weakTo: ["SLASH", "THRUST", "MULTI"], resists: [], reactionType: null,
       damageMultiplier: 1.00, poiseMultiplier: 1.50
     }
   };
 
   W.openingForIntent = intent => W.ENEMY_OPENINGS[typeof intent === "string" ? intent : intent?.id] || null;
-  W.evaluateOpening = (opening, attackType) => {
+  W.evaluateOpening = (opening, attackType, active = true) => {
     const normal = ["SLASH", "THRUST", "MULTI"].includes(attackType);
-    const matched = !!opening && normal && opening.weakTo.includes(attackType);
+    let result="neutral";
+    if(active&&opening&&normal){if(opening.weakTo.includes(attackType))result="exploit";else if(opening.resists?.includes(attackType))result="resisted";}
+    const matched=result==="exploit",resisted=result==="resisted";
     return {
       openingId: opening?.id || null,
       attackType,
+      result,
       matched,
-      damageMultiplier: matched ? opening.damageMultiplier : 1,
-      poiseMultiplier: matched ? opening.poiseMultiplier : 1,
-      feedbackShown: false
+      resisted,
+      reactionType: resisted ? opening.reactionType : null,
+      damageMultiplier: matched ? opening.damageMultiplier : resisted ? W.OPENING_MULTIPLIERS.resisted.damage : 1,
+      poiseMultiplier: matched ? opening.poiseMultiplier : resisted ? W.OPENING_MULTIPLIERS.resisted.poise : 1,
+      feedbackShown: false,
+      reactionShown: false
     };
   };
 

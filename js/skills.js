@@ -23,7 +23,7 @@
   };
 
   class SkillRunner{
-    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;this.opening=W.evaluateOpening(combat.opening,skill.attackType);this.setup();}
+    constructor(combat,attacker,target,skill){this.c=combat;this.a=attacker;this.b=target;this.s=skill;this.t=0;this.done=false;this.events=new Set();this.ax=attacker.x;this.ay=attacker.y;this.aside=attacker.side;this.bx=target.x;this.by=target.y;const active=target===combat.enemy&&target.hp>0&&!target.broken&&!!combat.opening;this.opening=W.evaluateOpening(combat.opening,skill.attackType,active);this.setup();}
     once(id,fn){if(!this.events.has(id)){this.events.add(id);fn();}}
     setup(){
       this.a.clearPose();
