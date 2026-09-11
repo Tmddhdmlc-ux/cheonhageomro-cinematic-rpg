@@ -41,7 +41,7 @@
         return;
       }
       if(this.mode==="result"){if(k==="R"){e.preventDefault();this.retryDuel();}return;}
-      if(this.transitionLock){e.preventDefault();return;}
+      if(this.transitionLock){e.preventDefault();const cards=[...this.el["campaign-intermission"].querySelectorAll("[data-route]")];if(this.campaignTransition&&cards.length>1){this.routeIndex??=0;if(k==="ARROWLEFT"||k==="ARROWRIGHT"){this.routeIndex=(this.routeIndex+(k==="ARROWRIGHT"?1:-1)+cards.length)%cards.length;cards.forEach((card,i)=>{card.setAttribute("aria-selected",String(i===this.routeIndex));card.classList.toggle("selected",i===this.routeIndex);});cards[this.routeIndex].focus();}else if(k==="ENTER")this.chooseCampaignRoute(cards[this.routeIndex].dataset.route);}return;}
       if(this.combat.awaitingBind){
         if(["W","E","SPACE","1","2","3","4","5","Q","F1","F2","F3","F4","F5","F6","F7","F8","F9","R"].includes(k))e.preventDefault();
         if(k==="E")this.combat.chooseSwordBind("press");else if(k==="W")this.combat.chooseSwordBind("shift");else if(k==="SPACE")this.combat.chooseSwordBind("recall");else if(k==="R")this.retryDuel();return;
