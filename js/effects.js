@@ -21,8 +21,9 @@
       for (let i = 0; i < count; i++) this.add("petal", { x: x + U.rand(-80,80), y: y + U.rand(-100,40), vx: U.rand(-50,60), vy: U.rand(-50,25), spin: U.rand(-6,6), rot: U.rand(0,6), r: U.rand(3,7), life: U.rand(.6,1.25) });
     }
     lightning(x1, y1, x2, y2, life = .12) { this.add("lightning", { x1,y1,x2,y2, life, seed: Math.random() }); }
-    damage(x, y, value, crit = false, final = false) { this.numbers.push({ x,y, value, crit, final, age:0, life: crit || final ? 1.05 : .72, drift: U.rand(-13,13) }); }
+    damage(x, y, value, crit = false, final = false, mitigated = false, mitigatedLabel = false) { this.numbers.push({ x,y, value, crit, final, mitigated, mitigatedLabel, age:0, life: crit || final ? 1.05 : .72, drift: U.rand(-13,13) }); }
     poise(x,y,value,kind="damage"){this.numbers.push({x,y,value,poise:true,poiseKind:kind,age:0,life:.62,drift:U.rand(-8,8)});}
+    reactionLabel(x,y,hanja,label,reactionType){this.add("reactionLabel",{x,y,hanja,label,reactionType,life:.62});}
     trackSword(character,dt,active){
       const now=character.getSwordTip(),prev=this.tipHistory.get(character);this.tipHistory.set(character,now);
       if(!active||!prev||dt<=0)return;const d=Math.hypot(now.x-prev.x,now.y-prev.y),speed=d/dt;
@@ -66,6 +67,8 @@
           ctx.lineTo(p.x2,p.y2); ctx.stroke();
         } else if (p.type === "trail") {
           ctx.strokeStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=12*(1-t);ctx.lineCap="round";ctx.lineWidth=p.width*(1-t);ctx.beginPath();ctx.moveTo(p.x1,p.y1);ctx.lineTo(p.x2,p.y2);ctx.stroke();
+        } else if (p.type === "reactionLabel") {
+          ctx.globalCompositeOperation="source-over";ctx.translate(p.x,p.y-16*U.ease(t));ctx.textAlign="center";ctx.fillStyle=p.reactionType==="sidestep"?"#a8d3cc":"#e2c693";ctx.strokeStyle="#0a1112";ctx.lineWidth=4;ctx.font="800 13px serif";ctx.strokeText(`${p.hanja} ${p.label}`,0,0);ctx.fillText(`${p.hanja} ${p.label}`,0,0);
         }
         ctx.restore();
       }
@@ -73,11 +76,12 @@
     }
     drawNumbers(ctx) {
       for (const n of this.numbers) {
-        const t=n.age/n.life, appear=Math.min(1,t*8), fade=1-Math.max(0,(t-.62)/.38), scale=(n.final?1.65:n.crit?1.35:1)*(1+.35*Math.exp(-t*12));
+        const t=n.age/n.life, appear=Math.min(1,t*8), fade=1-Math.max(0,(t-.62)/.38), scale=(n.final?1.65:n.crit?1.35:1)*(n.mitigated?.82:1)*(1+.35*Math.exp(-t*12));
         ctx.save(); ctx.translate(n.x+n.drift*t,n.y-48*U.ease(t)); ctx.scale(scale,scale); ctx.globalAlpha=appear*fade; ctx.textAlign="center";
         if(n.poise){ctx.font=`800 ${n.poiseKind==="cost"?16:14}px serif`;ctx.strokeStyle=n.poiseKind==="cost"?"#102a28":"#241b08";ctx.lineWidth=4;ctx.strokeText(`勢 -${n.value}`,0,0);ctx.fillStyle=n.poiseKind==="cost"?"#8fe4c9":"#efd77f";ctx.fillText(`勢 -${n.value}`,0,0);ctx.restore();continue;}
-        if(n.crit){ctx.fillStyle="#ffd47a";ctx.strokeStyle="#4a170b";ctx.lineWidth=5;ctx.font="800 12px system-ui";ctx.strokeText("CRITICAL",0,-17);ctx.fillText("CRITICAL",0,-17);}
-        ctx.font=`900 ${n.final?30:n.crit?25:20}px system-ui`; ctx.strokeStyle="#150909"; ctx.lineWidth=6; ctx.strokeText(n.value.toLocaleString(),0,0); ctx.fillStyle=n.final?"#fff3bd":n.crit?"#ffcf66":"#f5f2e7"; ctx.fillText(n.value.toLocaleString(),0,0); ctx.restore();
+        if(n.crit){ctx.fillStyle=n.mitigated?"#b9aa86":"#ffd47a";ctx.strokeStyle="#4a170b";ctx.lineWidth=5;ctx.font="800 12px system-ui";ctx.strokeText("CRITICAL",0,-17);ctx.fillText("CRITICAL",0,-17);}
+        if(n.mitigatedLabel){ctx.font="800 9px system-ui";ctx.strokeStyle="#11191a";ctx.lineWidth=4;ctx.strokeText("감쇄",0,-17);ctx.fillStyle="#9ca7a1";ctx.fillText("감쇄",0,-17);}
+        ctx.font=`900 ${n.final?30:n.crit?25:20}px system-ui`; ctx.strokeStyle="#150909"; ctx.lineWidth=6; ctx.strokeText(n.value.toLocaleString(),0,0); ctx.fillStyle=n.mitigated?"#aeb5ae":n.final?"#fff3bd":n.crit?"#ffcf66":"#f5f2e7"; ctx.fillText(n.value.toLocaleString(),0,0); ctx.restore();
       }
     }
   }

@@ -56,7 +56,7 @@
     }
     beginTransition(){
       if(!this.transitionPending||this.transitioned||this.c.over||this.c.runner)return false;
-      this.transitionPending=false;this.transitioned=true;this.phase=2;this.c.turn="transition";this.c.wait=0;this.c.enemy.broken=false;this.c.enemy.breakPending=false;this.c.enemy.poise=this.c.enemy.maxPoise;this.c.enemy.stance="salpungse";this.startCycle();this.c.runner=new PhaseTransitionRunner(this.c);this.c.game.updateUI();return true;
+      this.c.enemyDefense.cancel(this.c.enemy);this.transitionPending=false;this.transitioned=true;this.phase=2;this.c.turn="transition";this.c.wait=0;this.c.enemy.broken=false;this.c.enemy.breakPending=false;this.c.enemy.poise=this.c.enemy.maxPoise;this.c.enemy.stance="salpungse";this.startCycle();this.c.runner=new PhaseTransitionRunner(this.c);this.c.game.updateUI();return true;
     }
     advanceAfterEnemySkill(skill){
       if(!this.active||!this.route||skill?.id!==this.skillForStep()?.id)return this.syncIntent();
