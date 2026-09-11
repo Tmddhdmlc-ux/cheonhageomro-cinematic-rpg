@@ -1,16 +1,18 @@
 (function(W){
   "use strict";
   const U=W.util;
+
   class Game{
     constructor(){
       this.shell=document.getElementById("game-shell");this.canvas=document.getElementById("game");this.ctx=this.canvas.getContext("2d");
-      this.camera=new W.Camera();this.audio=new W.AudioEngine();this.effects=new W.Effects();
-      this.player=new W.Character(W.PLAYER_DATA,335,476);this.enemy=new W.Character(W.ENEMY_DATA,945,476);
-      this.combat=new W.Combat(this);this.time=0;this.last=performance.now();this.motes=Array.from({length:28},()=>({x:U.rand(0,1280),y:U.rand(80,500),s:U.rand(.15,.65),a:U.rand(.08,.35),r:U.rand(1,3)}));
-      this.cacheDom();this.buildSkills();this.buildTactics();this.bind();this.combat.reset();requestAnimationFrame(t=>this.loop(t));
+      this.camera=new W.Camera();this.audio=new W.AudioEngine();this.effects=new W.Effects();this.time=0;this.last=performance.now();
+      this.mode="selecting";this.selectedEnemyId=null;this.rosterIndex=0;this.enemyConfig=W.ENEMIES.yama;this.arenaId=this.enemyConfig.arenaId;
+      this.player=new W.Character(W.PLAYER_DATA,335,476);this.enemy=new W.Character(this.enemyConfig.character,945,476);this.combat=new W.Combat(this);this.combat.turn="selecting";
+      this.motes=Array.from({length:28},()=>({x:U.rand(0,1280),y:U.rand(80,500),s:U.rand(.15,.65),a:U.rand(.08,.35),r:U.rand(1,3)}));
+      this.cacheDom();this.buildSkills();this.buildTactics();this.bind();this.showRoster(false);requestAnimationFrame(t=>this.loop(t));
     }
     cacheDom(){
-      const ids=["player-hp","player-mp","player-poise","enemy-hp","enemy-poise","player-hp-text","player-mp-text","player-poise-text","enemy-hp-text","enemy-poise-text","player-state","enemy-state","enemy-phase","turn-orb","turn-hint","ai-state","slow-state","tooltip","skill-title","combat-callout","flash","message","audio-toggle","enemy-intent","intent-phase","intent-hanja","intent-name","intent-desc","intent-response","intent-opening"];
+      const ids=["player-hp","player-mp","player-poise","enemy-hp","enemy-poise","player-hp-text","player-mp-text","player-poise-text","enemy-hp-text","enemy-poise-text","player-state","enemy-state","enemy-name","enemy-portrait","enemy-phase","turn-orb","turn-hint","ai-state","slow-state","tooltip","skill-title","combat-callout","flash","message","audio-toggle","enemy-intent","intent-phase","intent-hanja","intent-name","intent-desc","intent-response","intent-opening","duel-roster","duel-result","result-kicker","result-title","result-opponent","retry-duel","choose-opponent"];
       this.el={};for(const id of ids)this.el[id]=document.getElementById(id);
     }
     buildSkills(){
@@ -18,14 +20,51 @@
       W.SKILLS.forEach(s=>{const b=document.createElement("button");b.type="button";b.className="skill-btn "+(s.id==="thunder"?"ultimate":"");b.dataset.id=s.id;b.dataset.key=s.key;b.dataset.attackType=s.attackType;b.innerHTML=`<span class="rank">${s.rank}</span><strong>${s.name}</strong><span class="attack-type">${W.ATTACK_TYPE_LABELS[s.attackType]}<em></em></span><span class="meta"><i class="cost">내력 ${s.cost}</i><i>위력 ${s.power}</i></span><i class="seal">${s.hanja[0]}</i>`;b.addEventListener("click",()=>this.combat.useSkill(s.id));b.addEventListener("mouseenter",e=>this.tip(e,s));b.addEventListener("mousemove",e=>this.moveTip(e));b.addEventListener("mouseleave",()=>this.el.tooltip.style.display="none");box.appendChild(b);});
     }
     buildTactics(){
-      const box=document.getElementById("tactics");W.TACTICS.forEach(t=>{const b=document.createElement("button");b.type="button";b.className="tactic-btn";b.dataset.id=t.id;b.innerHTML=`<small>${t.key} · 전술</small><strong>${t.name}</strong><em>${t.id==="breathe"?"내력·기세 회복":t.id==="evade"?"귀영돌 확정 회피":"흑풍참 확정 · 연환검 기세 50+"}</em>`;b.addEventListener("click",()=>this.combat.useTactic(t.id));b.addEventListener("mouseenter",e=>this.tip(e,t));b.addEventListener("mousemove",e=>this.moveTip(e));b.addEventListener("mouseleave",()=>this.el.tooltip.style.display="none");box.appendChild(b);});
+      const box=document.getElementById("tactics");W.TACTICS.forEach(t=>{const b=document.createElement("button");b.type="button";b.className="tactic-btn";b.dataset.id=t.id;b.innerHTML=`<small>${t.key} · 전술</small><strong>${t.name}</strong><em></em>`;b.addEventListener("click",()=>this.combat.useTactic(t.id));b.addEventListener("mouseenter",e=>this.tip(e,t));b.addEventListener("mousemove",e=>this.moveTip(e));b.addEventListener("mouseleave",()=>this.el.tooltip.style.display="none");box.appendChild(b);});
+      this.updateTacticHints();
     }
     bind(){
-      window.addEventListener("keydown",e=>{if(e.repeat)return;const s=W.SKILLS.find(x=>x.key===e.key);if(s){this.combat.useSkill(s.id);return;}const k=e.key.toUpperCase(),t=W.TACTICS.find(x=>x.key===k);if(t){this.combat.useTactic(t.id);return;}if(["F1","F2","F3","F4","F5","F6","F7","F8","F9"].includes(k))e.preventDefault();if(k==="F1"){this.player.hp=this.player.maxHp;this.setMessage("HP 전체 회복",650);}else if(k==="F2"){this.player.mp=this.player.maxMp;this.setMessage("내력 전체 회복",650);}else if(k==="F3"){this.enemy.hp=this.enemy.maxHp;this.combat.over=false;if(this.combat.turn==="over")this.combat.turn="player";this.setMessage("적 HP 회복",650);}else if(k==="F4")this.combat.toggleAI();else if(k==="F5")this.combat.toggleSlow();else if(k==="F6"){this.enemy.poise=10;this.enemy.broken=false;this.setMessage("적 기세 10",650);}else if(k==="F7"){this.player.poise=10;this.player.broken=false;this.setMessage("플레이어 기세 10",650);}else if(k==="F8")this.combat.forceIntent();else if(k==="F9"){this.enemy.poise=0;this.combat.breakPoise(this.enemy,this.player);}else if(k==="R")this.combat.reset();this.updateUI();});
+      window.addEventListener("keydown",e=>this.handleKey(e));
+      document.querySelectorAll(".roster-card").forEach((card,index)=>{card.addEventListener("focus",()=>{this.rosterIndex=index;this.updateRosterSelection();});card.addEventListener("click",()=>this.startDuel(card.dataset.enemy));});
+      this.el["retry-duel"].addEventListener("click",()=>this.retryDuel());this.el["choose-opponent"].addEventListener("click",()=>this.showRoster());
       this.el["audio-toggle"].addEventListener("click",()=>{const on=this.audio.toggle();this.el["audio-toggle"].querySelector("span").textContent=on?"ON":"OFF";});
       window.addEventListener("pointerdown",()=>this.audio.unlock(),{once:true});
     }
-    openingActive(){const c=this.combat,e=this.enemy;return !!c.opening&&!c.over&&c.turn!=="transition"&&e.hp>0&&!e.broken;}
+    handleKey(e){
+      if(e.repeat)return;const k=e.key.toUpperCase();
+      if(this.mode==="selecting"){
+        if(["ARROWLEFT","ARROWRIGHT","ENTER","ESCAPE","1","2","3","4","5","Q","W","E","F1","F2","F3","F4","F5","F6","F7","F8","F9","R"].includes(k))e.preventDefault();
+        if(k==="ARROWLEFT"||k==="ARROWRIGHT"){this.rosterIndex=(this.rosterIndex+(k==="ARROWRIGHT"?1:-1)+2)%2;this.updateRosterSelection(true);}else if(k==="ENTER")this.startDuel(["yama","mujin"][this.rosterIndex]);
+        return;
+      }
+      if(this.mode==="result"){if(k==="R"){e.preventDefault();this.retryDuel();}return;}
+      const s=W.SKILLS.find(x=>x.key===e.key);if(s){this.combat.useSkill(s.id);return;}const tactic=W.TACTICS.find(x=>x.key===k);if(tactic){this.combat.useTactic(tactic.id);return;}
+      if(["F1","F2","F3","F4","F5","F6","F7","F8","F9"].includes(k))e.preventDefault();
+      if(k==="F1"){this.player.hp=this.player.maxHp;this.setMessage("HP 전체 회복",650);}else if(k==="F2"){this.player.mp=this.player.maxMp;this.setMessage("내력 전체 회복",650);}else if(k==="F3"){this.enemy.hp=this.enemy.maxHp;this.combat.over=false;if(this.combat.turn==="over")this.combat.turn="player";this.setMessage("적 HP 회복",650);}else if(k==="F4")this.combat.toggleAI();else if(k==="F5")this.combat.toggleSlow();else if(k==="F6"){this.enemy.poise=10;this.enemy.broken=false;this.setMessage("적 기세 10",650);}else if(k==="F7"){this.player.poise=10;this.player.broken=false;this.setMessage("플레이어 기세 10",650);}else if(k==="F8")this.combat.forceIntent();else if(k==="F9"){this.enemy.poise=0;this.combat.breakPoise(this.enemy,this.player);}else if(k==="R")this.retryDuel();this.updateUI();
+    }
+    updateRosterSelection(focus=false){
+      document.querySelectorAll(".roster-card").forEach((card,index)=>{const selected=index===this.rosterIndex;card.classList.toggle("selected",selected);card.setAttribute("aria-selected",String(selected));if(selected&&focus)card.focus();});
+    }
+    clearUiTimers(){clearTimeout(this.msgTimer);clearTimeout(this.resultTimer);this.el?.message?.classList.remove("show");this.el?.["skill-title"]?.classList.remove("show");this.el?.["combat-callout"]?.classList.remove("show");}
+    hideResult(){this.el["duel-result"].classList.remove("show");this.el["duel-result"].setAttribute("aria-hidden","true");}
+    showRoster(dispose=true){
+      this.clearUiTimers();if(dispose)this.combat?.dispose();this.mode="selecting";this.combat.turn="selecting";this.hideResult();this.el["duel-roster"].classList.add("open");this.shell.classList.add("selecting");this.updateRosterSelection();this.updateUI();
+    }
+    startDuel(enemyId){
+      const config=W.ENEMIES[enemyId];if(!config)return false;this.clearUiTimers();this.combat?.dispose();this.enemyConfig=config;this.selectedEnemyId=enemyId;this.arenaId=config.arenaId;this.mode="duel";
+      this.player=new W.Character(W.PLAYER_DATA,335,476);this.enemy=new W.Character(config.character,945,476);this.combat=new W.Combat(this);this.shell.dataset.enemy=enemyId;this.shell.classList.remove("selecting");this.el["duel-roster"].classList.remove("open");this.hideResult();this.rosterIndex=enemyId==="mujin"?1:0;this.updateRosterSelection();this.updateTacticHints();this.combat.reset();return true;
+    }
+    retryDuel(){return this.selectedEnemyId?this.startDuel(this.selectedEnemyId):false;}
+    finishDuel(won){
+      const message=won?this.enemyConfig.victoryMessage:this.enemyConfig.defeatMessage;this.setMessage(message,2600);clearTimeout(this.resultTimer);
+      this.el["result-kicker"].textContent=won?"勝利 · VICTORY":"敗北 · DEFEAT";this.el["result-title"].textContent=won?"검로를 열었습니다":"다시 호흡을 고르십시오";this.el["result-opponent"].textContent=`${this.enemyConfig.name} · ${this.enemyConfig.arenaName}`;
+      this.resultTimer=setTimeout(()=>{if(!this.combat.over||this.mode!=="duel")return;this.mode="result";this.el["duel-result"].classList.add("show");this.el["duel-result"].setAttribute("aria-hidden","false");this.el["retry-duel"].focus();this.updateUI();},950);
+    }
+    updateTacticHints(){
+      const mujin=this.enemyConfig?.id==="mujin",hints={breathe:"내력·기세 회복",evade:mujin?"낙봉개산 확정 회피":"귀영돌 확정 회피",counter:mujin?"횡도 기세 65+ · 철벽진 45+":"흑풍참 확정 · 연환검 기세 50+"};
+      document.querySelectorAll(".tactic-btn").forEach(button=>button.querySelector("em").textContent=hints[button.dataset.id]);
+    }
+    openingActive(){const c=this.combat,e=this.enemy;return this.mode==="duel"&&!!c.opening&&!c.over&&c.turn!=="transition"&&e.hp>0&&!e.broken;}
     openingResult(s){return W.evaluateOpening(this.combat.opening,s.attackType,this.openingActive());}
     tip(e,s){let meta="한 턴을 사용합니다",opening="";if(s.cost!=null){const result=this.openingResult(s),status=result.result==="exploit"?"허점 파훼":result.result==="resisted"?"검세 방어":"중립";meta=`내력 ${s.cost} · 기본 피해 ${s.damage[0]}–${s.damage[1]} · 기세 ${s.poiseDamage}`;opening=`<br><span class="opening-tip">${status} HP×${result.damageMultiplier.toFixed(2)} / 기세×${result.poiseMultiplier.toFixed(2)}</span>`;}this.el.tooltip.innerHTML=`<b>「${s.hanja}」 ${s.name}</b>${s.desc}<br><span>${meta}</span>${opening}`;this.el.tooltip.style.display="block";this.moveTip(e);}
     moveTip(e){const x=Math.min(innerWidth-265,e.clientX+15),y=Math.max(8,e.clientY-105);this.el.tooltip.style.left=x+"px";this.el.tooltip.style.top=y+"px";}
@@ -34,49 +73,49 @@
     callout(hanja,label,kind="break"){const el=this.el["combat-callout"];el.className="";void el.offsetWidth;el.querySelector("strong").textContent=`「${hanja}」`;el.querySelector("span").textContent=label;el.classList.add("show",kind);}
     flash(){const f=this.el.flash;f.classList.remove("fire");void f.offsetWidth;f.classList.add("fire");}
     updateUI(){
-      const p=this.player,e=this.enemy,c=this.combat;this.el["player-hp"].style.width=100*p.hp/p.maxHp+"%";this.el["player-mp"].style.width=100*p.mp/p.maxMp+"%";this.el["player-poise"].style.width=100*p.poise/p.maxPoise+"%";this.el["enemy-hp"].style.width=100*e.hp/e.maxHp+"%";this.el["enemy-poise"].style.width=100*e.poise/e.maxPoise+"%";
+      const p=this.player,e=this.enemy,c=this.combat,config=this.enemyConfig;this.el["player-hp"].style.width=100*p.hp/p.maxHp+"%";this.el["player-mp"].style.width=100*p.mp/p.maxMp+"%";this.el["player-poise"].style.width=100*p.poise/p.maxPoise+"%";this.el["enemy-hp"].style.width=100*e.hp/e.maxHp+"%";this.el["enemy-poise"].style.width=100*e.poise/e.maxPoise+"%";
       this.el["player-hp-text"].textContent=`${Math.ceil(p.hp).toLocaleString()} / ${p.maxHp.toLocaleString()}`;this.el["player-mp-text"].textContent=`내력 ${Math.ceil(p.mp)} / ${p.maxMp}`;this.el["player-poise-text"].textContent=p.broken?"破勢 / BREAK":`氣勢 ${Math.ceil(p.poise)} / ${p.maxPoise}`;this.el["enemy-hp-text"].textContent=`${Math.ceil(e.hp).toLocaleString()} / ${e.maxHp.toLocaleString()}`;this.el["enemy-poise-text"].textContent=e.broken?"破勢 / BREAK":`氣勢 ${Math.ceil(e.poise)} / ${e.maxPoise}`;
-      const orb=this.el["turn-orb"];if(c.over){orb.innerHTML="<span>DUEL END</span><b>勝敗已決</b>";}else if(c.runner){orb.innerHTML="<span>EXECUTING</span><b>劍勢如虹</b>";}else if(c.turn==="player"){orb.innerHTML="<span>PLAYER</span><b>你的回合</b>";}else{orb.innerHTML="<span>ENEMY</span><b>敵方回合</b>";}
-      this.el["turn-hint"].textContent=c.runner?"초식 전개 중":c.turn==="player"?"무공 또는 대응 전술을 선택하십시오":"적의 기세를 살피는 중";this.el["player-state"].textContent=p.broken?"파세":c.runner&&c.runner.a===p?"행동":p.guard?"대응 준비":"준비";this.el["enemy-state"].textContent=e.broken?"파세":c.runner&&c.runner.a===e?"공격":c.turn==="enemy"?"주시":"대기";this.el["ai-state"].textContent=c.ai?"ON":"OFF";this.el["slow-state"].textContent=c.slow?"ON":"OFF";
-      this.el["enemy-phase"].textContent=c.phase.active?"2식 · 살풍세":"1식";this.el["enemy-phase"].classList.toggle("active",c.phase.active);
-      this.el["intent-phase"].textContent=c.phase.active?`살풍세 ${c.phase.phaseStep}/4${c.phase.signatureArmed?" · 절기":""}`:"";
-      this.el["intent-phase"].classList.toggle("visible",c.phase.active);this.el["enemy-intent"].classList.toggle("signature",c.phase.signatureArmed);
+      this.el["enemy-name"].textContent=config.name;this.el["enemy-portrait"].textContent=config.id==="mujin"?"鐵":"魔";
+      const orb=this.el["turn-orb"];if(this.mode==="selecting")orb.innerHTML="<span>ROSTER</span><b>比武帖</b>";else if(c.over){orb.innerHTML="<span>DUEL END</span><b>勝敗已決</b>";}else if(c.runner){orb.innerHTML="<span>EXECUTING</span><b>劍勢如虹</b>";}else if(c.turn==="player"){orb.innerHTML="<span>PLAYER</span><b>你的回合</b>";}else{orb.innerHTML="<span>ENEMY</span><b>敵方回合</b>";}
+      this.el["turn-hint"].textContent=this.mode==="selecting"?"비무첩에서 상대를 선택하십시오":c.runner?"초식 전개 중":c.turn==="player"?"무공 또는 대응 전술을 선택하십시오":"적의 기세를 살피는 중";this.el["player-state"].textContent=p.broken?"파세":c.runner&&c.runner.a===p?"행동":p.guard?"대응 준비":"준비";this.el["enemy-state"].textContent=e.broken?"파세":c.runner&&c.runner.a===e?"공격":c.turn==="enemy"?"주시":"대기";this.el["ai-state"].textContent=c.ai?"ON":"OFF";this.el["slow-state"].textContent=c.slow?"ON":"OFF";
+      if(config.bossPhase){this.el["enemy-phase"].textContent=c.phase.active?"2식 · 살풍세":"1식";this.el["enemy-phase"].classList.toggle("active",c.phase.active);this.el["enemy-phase"].classList.remove("elite");this.el["intent-phase"].textContent=c.phase.active?`살풍세 ${c.phase.phaseStep}/4${c.phase.signatureArmed?" · 절기":""}`:"";}
+      else{this.el["enemy-phase"].textContent=config.badge;this.el["enemy-phase"].classList.remove("active");this.el["enemy-phase"].classList.add("elite");this.el["intent-phase"].textContent=c.mujin?.label||"철산도 1/3";}
+      this.el["intent-phase"].classList.toggle("visible",config.bossPhase?c.phase.active:!!c.intent);this.el["enemy-intent"].classList.toggle("signature",config.bossPhase&&c.phase.signatureArmed);
       if(c.intent){this.el["intent-hanja"].textContent=c.intent.hanja;this.el["intent-name"].textContent=c.intent.name;this.el["intent-desc"].textContent=`${c.intent.intent} · ${c.intent.threat}`;this.el["intent-response"].textContent=c.intent.responseHint;}
       if(c.opening){const weak=c.opening.weakTo.map(type=>W.ATTACK_TYPE_LABELS[type]),resist=c.opening.resists.map(type=>W.ATTACK_TYPE_LABELS[type]);this.el["intent-opening"].textContent=c.opening.id==="openGate"?"허점: 모든 일반 초식 · 저항 없음":c.opening.id==="ultimateCharge"?"기세 허점: 모든 일반 초식 · 저항 없음":`허점: ${weak.join("/")} · 저항: ${resist.join("/")||"없음"}`;}
-      document.querySelectorAll(".skill-btn").forEach((b,i)=>{const skill=W.SKILLS[i],disabled=c.turn!=="player"||!!c.runner||c.over||p.mp<skill.cost,result=this.openingResult(skill),tag=result.result==="exploit"?"유효":result.reactionType==="block"?"막힘":result.reactionType==="deflect"?"흘림":result.reactionType==="sidestep"?"보법":"";b.disabled=disabled;b.classList.toggle("effective",result.result==="exploit");b.classList.toggle("resisted",result.result==="resisted");b.querySelector(".attack-type em").textContent=tag;});
-      document.querySelectorAll(".tactic-btn").forEach(b=>{b.disabled=c.turn!=="player"||!!c.runner||c.over;b.classList.toggle("armed",p.guard===b.dataset.id);});
+      document.querySelectorAll(".skill-btn").forEach((b,i)=>{const skill=W.SKILLS[i],disabled=this.mode!=="duel"||c.turn!=="player"||!!c.runner||c.over||p.mp<skill.cost,result=this.openingResult(skill),tag=result.result==="exploit"?"유효":result.reactionType==="block"?"막힘":result.reactionType==="deflect"?"흘림":result.reactionType==="sidestep"?"보법":"";b.disabled=disabled;b.classList.toggle("effective",result.result==="exploit");b.classList.toggle("resisted",result.result==="resisted");b.querySelector(".attack-type em").textContent=tag;});
+      document.querySelectorAll(".tactic-btn").forEach(b=>{b.disabled=this.mode!=="duel"||c.turn!=="player"||!!c.runner||c.over;b.classList.toggle("armed",p.guard===b.dataset.id);});
     }
     loop(now){let dt=Math.min(.034,(now-this.last)/1000);this.last=now;this.time+=dt;this.combat.update(dt);this.draw();requestAnimationFrame(t=>this.loop(t));}
-    draw(){
-      const ctx=this.ctx;ctx.clearRect(0,0,1280,720);ctx.save();this.camera.apply(ctx);this.drawWorld(ctx);this.player.draw(ctx);this.enemy.draw(ctx);this.drawOpeningPulse(ctx);this.effects.draw(ctx,(c,s)=>W.Character.drawSnapshot(c,s,true));this.effects.drawNumbers(ctx);ctx.restore();this.drawOverlay(ctx);
-    }
+    draw(){const ctx=this.ctx;ctx.clearRect(0,0,1280,720);ctx.save();this.camera.apply(ctx);this.drawWorld(ctx);this.player.draw(ctx);this.enemy.draw(ctx);this.drawOpeningPulse(ctx);this.effects.draw(ctx,(c,s)=>W.Character.drawSnapshot(c,s,true));this.effects.drawNumbers(ctx);ctx.restore();this.drawOverlay(ctx);}
     drawOpeningPulse(ctx){const c=this.combat,e=this.enemy;if(c.opening?.id!=="ultimateCharge"||c.over||c.runner||!e.canUseOpeningPose())return;const hand=e.getHandPosition(),tip=e.getSwordTip(),pulse=.45+.35*Math.sin(this.time*7);ctx.save();ctx.globalCompositeOperation="screen";for(let i=0;i<8;i++){const q=(i/8+this.time*.16)%1,x=U.lerp(hand.x,tip.x,q)+Math.sin(this.time*5+i*2.1)*8,y=U.lerp(hand.y,tip.y,q)+Math.cos(this.time*4+i*1.7)*6;ctx.globalAlpha=pulse*(.35+.5*q);ctx.fillStyle=i%3?"#4c91a5":"#88ced0";ctx.shadowColor="#34788d";ctx.shadowBlur=8;ctx.beginPath();ctx.arc(x,y,1.2+(i%2)*.7,0,Math.PI*2);ctx.fill();}ctx.restore();}
-    drawWorld(ctx){
-      const t=this.time;
-      let g=ctx.createLinearGradient(0,0,0,540);g.addColorStop(0,"#111f25");g.addColorStop(.43,"#26383b");g.addColorStop(1,"#857b61");ctx.fillStyle=g;ctx.fillRect(-400,-300,2100,950);
-      // Moon and ink-wash mountain silhouettes.
+    drawWorld(ctx){if(this.arenaId==="bluestoneGate")return this.drawBluestoneGate(ctx);this.drawMoonSummit(ctx);}
+    drawMoonSummit(ctx){
+      const t=this.time;let g=ctx.createLinearGradient(0,0,0,540);g.addColorStop(0,"#111f25");g.addColorStop(.43,"#26383b");g.addColorStop(1,"#857b61");ctx.fillStyle=g;ctx.fillRect(-400,-300,2100,950);
       const moon=ctx.createRadialGradient(985,104,5,985,104,85);moon.addColorStop(0,"#f4edceaa");moon.addColorStop(.35,"#d9d1b077");moon.addColorStop(1,"#d9d1b000");ctx.fillStyle=moon;ctx.beginPath();ctx.arc(985,104,85,0,7);ctx.fill();
       this.mountain(ctx,-140,315,240,"#17262b",.96);this.mountain(ctx,95,290,185,"#1d2d31",.92);this.mountain(ctx,360,340,235,"#223438",.86);this.mountain(ctx,690,280,215,"#1a2c31",.92);this.mountain(ctx,1010,330,260,"#1b2a2e",.9);
-      // Distant pines and a pavilion.
-      ctx.globalAlpha=.45;for(let i=0;i<18;i++){const x=35+i*78+Math.sin(i*8)*20,h=U.rand(45,90);ctx.fillStyle="#102024";ctx.beginPath();ctx.moveTo(x,382);ctx.lineTo(x+18,382-h*.65);ctx.lineTo(x+5,382-h*.58);ctx.lineTo(x+12,382-h);ctx.lineTo(x-12,382-h*.55);ctx.lineTo(x-4,382-h*.62);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;
+      ctx.globalAlpha=.45;for(let i=0;i<18;i++){const x=35+i*78+Math.sin(i*8)*20,h=55+(i*17)%36;ctx.fillStyle="#102024";ctx.beginPath();ctx.moveTo(x,382);ctx.lineTo(x+18,382-h*.65);ctx.lineTo(x+5,382-h*.58);ctx.lineTo(x+12,382-h);ctx.lineTo(x-12,382-h*.55);ctx.lineTo(x-4,382-h*.62);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;
       ctx.fillStyle="#111b1e";ctx.fillRect(1020,278,8,101);ctx.fillRect(1112,278,8,101);ctx.beginPath();ctx.moveTo(986,280);ctx.lineTo(1070,244);ctx.lineTo(1155,280);ctx.lineTo(1127,274);ctx.lineTo(1012,274);ctx.closePath();ctx.fill();
-      // drifting mist
-      for(let i=0;i<5;i++){const x=((t*14+i*290)%1650)-220,y=320+i%2*38;const fog=ctx.createRadialGradient(x,y,0,x,y,190);fog.addColorStop(0,"#d6ddd92a");fog.addColorStop(1,"#d6ddd900");ctx.fillStyle=fog;ctx.fillRect(x-210,y-55,420,110);}
-      // arena
-      g=ctx.createLinearGradient(0,380,0,560);g.addColorStop(0,"#756e5b");g.addColorStop(.25,"#514f43");g.addColorStop(1,"#22282a");ctx.fillStyle=g;ctx.fillRect(-300,378,1900,300);
-      ctx.strokeStyle="#a8a0841c";ctx.lineWidth=1;for(let y=390;y<570;y+=24){ctx.beginPath();ctx.moveTo(-300,y);ctx.lineTo(1600,y);ctx.stroke();}for(let x=-200;x<1500;x+=110){ctx.beginPath();ctx.moveTo(x,380);ctx.lineTo(x-80,570);ctx.stroke();}
-      ctx.fillStyle="#192326";ctx.fillRect(-300,511,1900,80);
-      // foreground reeds/bamboo
-      this.bamboo(ctx,48,400,1.05,-.08);this.bamboo(ctx,1210,430,.92,.1);
-      for(const m of this.motes){const x=(m.x+t*12*m.s)%1280,y=m.y+Math.sin(t*m.s*2+m.x)*8;ctx.globalAlpha=m.a;ctx.fillStyle="#e5d8ac";ctx.beginPath();ctx.arc(x,y,m.r,0,7);ctx.fill();}ctx.globalAlpha=1;
+      for(let i=0;i<5;i++){const x=((t*14+i*290)%1650)-220,y=320+i%2*38,fog=ctx.createRadialGradient(x,y,0,x,y,190);fog.addColorStop(0,"#d6ddd92a");fog.addColorStop(1,"#d6ddd900");ctx.fillStyle=fog;ctx.fillRect(x-210,y-55,420,110);}
+      g=ctx.createLinearGradient(0,380,0,560);g.addColorStop(0,"#756e5b");g.addColorStop(.25,"#514f43");g.addColorStop(1,"#22282a");ctx.fillStyle=g;ctx.fillRect(-300,378,1900,300);ctx.strokeStyle="#a8a0841c";ctx.lineWidth=1;for(let y=390;y<570;y+=24){ctx.beginPath();ctx.moveTo(-300,y);ctx.lineTo(1600,y);ctx.stroke();}for(let x=-200;x<1500;x+=110){ctx.beginPath();ctx.moveTo(x,380);ctx.lineTo(x-80,570);ctx.stroke();}ctx.fillStyle="#192326";ctx.fillRect(-300,511,1900,80);this.bamboo(ctx,48,400,1.05,-.08);this.bamboo(ctx,1210,430,.92,.1);this.drawMotes(ctx,"#e5d8ac");
     }
+    drawBluestoneGate(ctx){
+      const t=this.time;let g=ctx.createLinearGradient(0,0,0,540);g.addColorStop(0,"#36454d");g.addColorStop(.48,"#596269");g.addColorStop(1,"#8a755f");ctx.fillStyle=g;ctx.fillRect(-300,-250,1900,900);
+      const glow=ctx.createRadialGradient(180,150,8,180,150,210);glow.addColorStop(0,"#dfb06a55");glow.addColorStop(1,"#dfb06a00");ctx.fillStyle=glow;ctx.fillRect(-40,-40,440,390);
+      this.mountain(ctx,-100,344,180,"#2b373c",.62);this.mountain(ctx,930,336,210,"#27343a",.68);
+      ctx.fillStyle="#31393a";ctx.fillRect(475,205,330,178);ctx.fillStyle="#202829";ctx.fillRect(512,236,256,147);ctx.strokeStyle="#647071";ctx.lineWidth=5;ctx.strokeRect(512,236,256,147);for(let x=548;x<768;x+=43){ctx.beginPath();ctx.moveTo(x,238);ctx.lineTo(x,381);ctx.stroke();}
+      ctx.fillStyle="#242c2e";ctx.fillRect(432,191,416,24);ctx.beginPath();ctx.moveTo(402,193);ctx.lineTo(640,152);ctx.lineTo(878,193);ctx.lineTo(836,185);ctx.lineTo(447,185);ctx.closePath();ctx.fill();
+      ctx.fillStyle="#4a5050";for(let i=0;i<4;i++)ctx.fillRect(450-i*18,383+i*13,380+i*36,13);
+      for(const [x,dir] of [[315,1],[965,-1]]){ctx.strokeStyle="#202a2c";ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(x,383);ctx.lineTo(x,196);ctx.stroke();const wave=Math.sin(t*2.2+x)*9*dir;ctx.fillStyle="#7d6747";ctx.beginPath();ctx.moveTo(x,220);ctx.quadraticCurveTo(x+42*dir+wave,232,x+88*dir+wave,218);ctx.lineTo(x+77*dir+wave,278);ctx.quadraticCurveTo(x+38*dir,264,x,270);ctx.closePath();ctx.fill();ctx.strokeStyle="#b09a7044";ctx.lineWidth=2;ctx.stroke();}
+      g=ctx.createLinearGradient(0,378,0,570);g.addColorStop(0,"#687274");g.addColorStop(.42,"#465052");g.addColorStop(1,"#232b2d");ctx.fillStyle=g;ctx.fillRect(-300,378,1900,300);ctx.strokeStyle="#aab6b41d";ctx.lineWidth=1;for(let y=389;y<570;y+=31){ctx.beginPath();ctx.moveTo(-300,y);ctx.lineTo(1600,y);ctx.stroke();}for(let x=-230;x<1520;x+=125){ctx.beginPath();ctx.moveTo(x,378);ctx.lineTo(x-95,570);ctx.stroke();}ctx.fillStyle="#1b2426";ctx.fillRect(-300,514,1900,76);
+      for(let i=0;i<7;i++){const x=((t*24+i*211)%1550)-120,y=432+(i%3)*29;ctx.globalAlpha=.08+(i%2)*.04;ctx.fillStyle="#c6b69b";ctx.beginPath();ctx.ellipse(x,y,58,7,.04,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;this.drawMotes(ctx,"#c9b994");
+    }
+    drawMotes(ctx,color){for(const m of this.motes){const x=(m.x+this.time*12*m.s)%1280,y=m.y+Math.sin(this.time*m.s*2+m.x)*8;ctx.globalAlpha=m.a;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,m.r,0,7);ctx.fill();}ctx.globalAlpha=1;}
     mountain(ctx,x,base,h,color,a){ctx.save();ctx.globalAlpha=a;ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x-180,base);ctx.quadraticCurveTo(x-80,base-h*.18,x,base-h);ctx.quadraticCurveTo(x+55,base-h*.48,x+130,base-h*.32);ctx.quadraticCurveTo(x+210,base-h*.12,x+300,base);ctx.closePath();ctx.fill();ctx.restore();}
     bamboo(ctx,x,y,s,lean){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.rotate(lean);ctx.strokeStyle="#0b1718";ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(0,90);ctx.lineTo(12,-245);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle="#314640";for(let yy=65;yy>-235;yy-=48){ctx.beginPath();ctx.moveTo(3,yy);ctx.lineTo(11,yy);ctx.stroke();ctx.fillStyle="#142724";for(const dir of[-1,1]){ctx.beginPath();ctx.ellipse(9+dir*24,yy-22,29,6,dir*.55,0,7);ctx.fill();}}ctx.restore();}
-    drawOverlay(ctx){
-      let v=ctx.createRadialGradient(640,315,180,640,315,690);v.addColorStop(0,"#0000");v.addColorStop(.72,"#00000016");v.addColorStop(1,"#000000b8");ctx.fillStyle=v;ctx.fillRect(0,0,1280,720);
-      ctx.fillStyle="#d8c98a22";ctx.fillRect(0,538,1280,1);
-    }
+    drawOverlay(ctx){let v=ctx.createRadialGradient(640,315,180,640,315,690);v.addColorStop(0,"#0000");v.addColorStop(.72,"#00000016");v.addColorStop(1,"#000000b8");ctx.fillStyle=v;ctx.fillRect(0,0,1280,720);ctx.fillStyle="#d8c98a22";ctx.fillRect(0,538,1280,1);}
   }
-  window.__WUXIA_GAME__=new Game();
-  Object.defineProperty(window,"__WUXIA_DEBUG__",{get(){const g=window.__WUXIA_GAME__,c=g.combat,phase=c.phase,opening=c.opening,snapshot=c.runner?.opening;return{turn:c.turn,running:c.runner?.s.id||null,playerHp:g.player.hp,playerMp:g.player.mp,playerPoise:g.player.poise,playerGuard:g.player.guard,enemyHp:g.enemy.hp,enemyPoise:g.enemy.poise,enemyBroken:g.enemy.broken,intent:c.intent?.id||null,enemyOpeningId:opening?.id||null,enemyOpeningWeakTo:opening?.weakTo||[],openingMatched:snapshot?.matched||false,openingResult:snapshot?.result||"neutral",openingReactionType:snapshot?.reactionType||null,openingDamageMultiplier:snapshot?.damageMultiplier??1,openingPoiseMultiplier:snapshot?.poiseMultiplier??1,ai:c.ai,slow:c.slow,enemyPhase:phase.phase,phaseStep:phase.phaseStep,phaseRoute:phase.route,signatureArmed:phase.signatureArmed};}});
+
+  W.Game=Game;window.__WUXIA_GAME__=new Game();
+  Object.defineProperty(window,"__WUXIA_DEBUG__",{get(){const g=window.__WUXIA_GAME__,c=g.combat,phase=c.phase,opening=c.opening,snapshot=c.runner?.opening;return{mode:g.mode,selectedEnemyId:g.selectedEnemyId,arenaId:g.arenaId,rosterOpen:g.el["duel-roster"].classList.contains("open"),resultOpen:g.el["duel-result"].classList.contains("show"),turn:c.turn,running:c.runner?.s.id||null,playerHp:g.player.hp,playerMp:g.player.mp,playerPoise:g.player.poise,playerGuard:g.player.guard,enemyHp:g.enemy.hp,enemyPoise:g.enemy.poise,enemyBroken:g.enemy.broken,intent:c.intent?.id||null,enemyOpeningId:opening?.id||null,enemyOpeningWeakTo:opening?.weakTo||[],openingMatched:snapshot?.matched||false,openingResult:snapshot?.result||"neutral",openingReactionType:snapshot?.reactionType||null,openingDamageMultiplier:snapshot?.damageMultiplier??1,openingPoiseMultiplier:snapshot?.poiseMultiplier??1,ai:c.ai,slow:c.slow,enemyPhase:phase.phase,phaseStep:phase.phaseStep,phaseRoute:phase.route,signatureArmed:phase.signatureArmed,mujinStep:c.mujin?.phaseStep||0,mujinOrder:c.mujin?.order?.slice()||[]};}});
 })(window.Wuxia);

@@ -35,6 +35,7 @@ body {
 
 #game { position: absolute; inset: 0; width: 100%; height: 100%; transition:filter .2s ease; }
 #game-shell.phase-transition #game { filter:brightness(.72) saturate(.82); }
+#game-shell.selecting #hud, #game-shell.selecting #enemy-intent, #game-shell.selecting #command-panel { opacity:.24;filter:saturate(.35); }
 
 #hud {
   position: absolute; inset: 2.2% 2.5% auto;
@@ -57,12 +58,14 @@ body {
 }
 .portrait::first-line { transform: rotate(-45deg); }
 .portrait.enemy { color: #e29a88; border-color: #b88d80; background: linear-gradient(135deg, #4a2423, #11090a); }
+#game-shell[data-enemy="mujin"] .portrait.enemy { color:#c4dde0;border-color:#718e91;background:linear-gradient(135deg,#4b5048,#151b1c);box-shadow:inset 0 0 0 3px #0b1112,inset 0 0 15px #9fc7cf33; }
 .portrait { clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
 .name-row { display: flex; justify-content: space-between; align-items: end; margin-bottom: 5px; }
 .name-row strong { font-family: serif; font-size: 17px; letter-spacing: .08em; text-shadow: 0 1px 5px #000; }
 .name-row span { color: #aeb9b7; font-size: 10px; letter-spacing: .1em; }
 #enemy-phase { display:inline-block;margin-left:6px;padding:2px 5px;border:1px solid #76635a;color:#b7a69e;font:700 8px/1 system-ui;letter-spacing:.06em;vertical-align:2px;transition:.25s; }
 #enemy-phase.active { border-color:#4d9695;color:#8fd1ce;background:#173335aa;box-shadow:0 0 9px #3c8f8f44; }
+#enemy-phase.elite { border-color:#829193;color:#c1d8d8;background:#243034cc;box-shadow:0 0 9px #8fb9bf33; }
 
 .bar { position: relative; height: 14px; margin: 4px 0; background: #071012cc; border: 1px solid #68716d; overflow: hidden; transform: skewX(-14deg); }
 .bar i { display: block; height: 100%; width: 100%; transition: width .35s ease; }
@@ -160,6 +163,8 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 #enemy-intent #intent-opening { margin-top:5px;color:#82cfbd;font-weight:800;letter-spacing:.05em; }
 #enemy-intent.signature { border-color:#d59a62;animation:signature-intent 1.35s ease-in-out infinite; }
 #enemy-intent.signature #intent-phase { color:#e0aa72; }
+#game-shell[data-enemy="mujin"] #enemy-intent { border-right-color:#829a98;background:linear-gradient(90deg,transparent,#101718dc); }
+#game-shell[data-enemy="mujin"] #enemy-intent small { color:#91aaa8; }
 @keyframes signature-intent { 0%,100%{box-shadow:0 0 0 #d59a6200} 50%{box-shadow:0 0 16px #d59a6244} }
 #game-shell.cinematic #enemy-intent { opacity:0;transform:translateY(-8px); }
 
@@ -197,6 +202,35 @@ kbd { padding: 1px 4px; border: 1px solid #445051; border-bottom-width: 2px; bor
 #tooltip b { display: block; color: #e2d7b4; font: 700 14px serif; margin-bottom: 4px; }
 #tooltip span { color: #6fc0ae; }
 #tooltip .opening-tip { color:#dfc875; }
+
+.menu-overlay {
+  position:absolute;inset:0;z-index:30;display:none;place-items:center;background:radial-gradient(circle at 50% 43%,#10191bd9,#030607ed 72%);backdrop-filter:blur(3px);
+}
+.menu-overlay.open { display:grid; }
+.roster-panel { width:min(760px,78%);padding:24px 30px 22px;border:1px solid #7f8069;background:linear-gradient(145deg,#111a1deF,#080c0eee);box-shadow:0 18px 65px #000;text-align:center;color:#d8d3c2; }
+.roster-panel>small { color:#8eb4ae;font:700 9px system-ui;letter-spacing:.34em; }
+.roster-panel h1 { margin:5px 0 1px;font:800 31px serif;letter-spacing:.35em;color:#eee4c9; }
+.roster-panel>p { margin:0 0 17px;color:#7f8b88;font-size:10px;letter-spacing:.14em; }
+.roster-cards { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+.roster-card { position:relative;min-height:180px;padding:22px 20px 18px;border:1px solid #4f5c5b;background:linear-gradient(155deg,#182326,#0b1113);color:#d8d8ce;cursor:pointer;text-align:left;transition:.18s;overflow:hidden; }
+.roster-card:hover,.roster-card:focus-visible,.roster-card.selected { outline:none;border-color:#d2bf7b;transform:translateY(-3px);box-shadow:inset 0 0 25px #c7b46b16,0 8px 22px #0008; }
+.roster-card i { position:absolute;right:10px;bottom:-21px;color:#b35f5031;font:800 104px serif;font-style:normal; }
+.roster-card[data-enemy="mujin"] i { color:#9fc7cf26; }
+.roster-card .difficulty { display:block;color:#9f9b79;font:700 9px system-ui;letter-spacing:.12em;margin-bottom:14px; }
+.roster-card strong { display:block;font:800 22px serif;letter-spacing:.1em;color:#eee1c4; }
+.roster-card b { display:block;margin-top:4px;color:#9faaa7;font:600 11px serif;letter-spacing:.18em; }
+.roster-card em { position:absolute;left:20px;bottom:18px;color:#84aaa3;font:normal 10px system-ui;letter-spacing:.05em; }
+.roster-panel footer { margin-top:16px;color:#75817e;font:700 9px system-ui;letter-spacing:.12em; }
+
+.result-panel { position:absolute;z-index:22;left:50%;top:26%;display:none;width:330px;padding:15px 18px 16px;transform:translate(-50%,-8px);border:1px solid #897c58;background:#091012ed;box-shadow:0 12px 34px #000b;text-align:center;color:#ddd5bd;opacity:0; }
+.result-panel.show { display:block;animation:result-in .24s ease forwards; }
+.result-panel>small { display:block;color:#8aa49f;font:700 8px system-ui;letter-spacing:.3em; }
+.result-panel>strong { display:block;margin:5px 0 3px;font:800 20px serif;letter-spacing:.12em; }
+.result-panel>span { display:block;color:#82908c;font-size:9px;margin-bottom:12px; }
+.result-panel div { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.result-panel button { border:1px solid #626b62;background:#172123;color:#ded6bf;padding:8px;cursor:pointer;font:700 11px serif;letter-spacing:.08em; }
+.result-panel button:hover,.result-panel button:focus-visible { outline:none;border-color:#c9b873;background:#243033; }
+@keyframes result-in { to{opacity:1;transform:translate(-50%,0)} }
 
 @media (max-width: 900px), (max-height: 520px) {
   #game-shell { min-width: 0; min-height: 0; }

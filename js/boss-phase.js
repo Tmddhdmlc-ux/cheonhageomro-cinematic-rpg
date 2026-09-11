@@ -38,12 +38,12 @@
   }
 
   class BossPhaseController{
-    constructor(combat){this.c=combat;this.reset();}
+    constructor(combat){this.c=combat;this.enabled=combat.enemyConfig?.bossPhase!==false;this.reset();}
     reset(){this.phase=1;this.transitionPending=false;this.transitioned=false;this.step=-1;this.route=null;this.signatureArmed=false;this.signatureCanceled=false;}
-    get active(){return this.phase===2;}
+    get active(){return this.enabled&&this.phase===2;}
     get phaseStep(){return this.active?this.step+1:0;}
     routeForHabits(){return(this.c.playerHabits.counter||0)>=(this.c.playerHabits.evade||0)?"counter":"evade";}
-    skillForStep(){const id=this.route&&META.routes[this.route][this.step];return W.ENEMY_SKILLS.find(skill=>skill.id===id)||null;}
+    skillForStep(){const id=this.route&&META.routes[this.route][this.step];return this.c.enemySkills.find(skill=>skill.id===id)||null;}
     syncIntent(){
       if(!this.active)return null;
       const skill=this.skillForStep();this.c.setEnemyIntent(skill);this.signatureArmed=skill?.id==="darkFall";this.c.game.updateUI();return skill;
@@ -51,11 +51,11 @@
     startCycle(){this.route=this.routeForHabits();this.step=0;this.signatureCanceled=false;return this.syncIntent();}
     armIfEligible(){
       const enemy=this.c.enemy;
-      if(this.phase===1&&!this.transitioned&&enemy.hp>0&&enemy.hp/enemy.maxHp<=META.threshold)this.transitionPending=true;
+      if(this.enabled&&this.phase===1&&!this.transitioned&&enemy.hp>0&&enemy.hp/enemy.maxHp<=META.threshold)this.transitionPending=true;
       return this.transitionPending;
     }
     beginTransition(){
-      if(!this.transitionPending||this.transitioned||this.c.over||this.c.runner)return false;
+      if(!this.enabled||!this.transitionPending||this.transitioned||this.c.over||this.c.runner)return false;
       this.c.enemyDefense.cancel(this.c.enemy);this.transitionPending=false;this.transitioned=true;this.phase=2;this.c.turn="transition";this.c.wait=0;this.c.enemy.broken=false;this.c.enemy.breakPending=false;this.c.enemy.poise=this.c.enemy.maxPoise;this.c.enemy.stance="salpungse";this.startCycle();this.c.runner=new PhaseTransitionRunner(this.c);this.c.game.updateUI();return true;
     }
     advanceAfterEnemySkill(skill){

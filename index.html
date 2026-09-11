@@ -3,12 +3,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>천하검로 v0.6 — 검세 공방</title>
-  <link rel="stylesheet" href="styles.css?v=0.6.0" />
+  <title>천하검로 v0.7 — 비무첩</title>
+  <link rel="stylesheet" href="styles.css?v=0.7.0" />
 </head>
 <body>
   <main id="game-shell" aria-label="천하검로 전투 화면">
     <canvas id="game" width="1280" height="720"></canvas>
+
+    <section id="duel-roster" class="menu-overlay open" role="dialog" aria-modal="true" aria-labelledby="roster-title">
+      <div class="roster-panel">
+        <small>天下劍路 · DUEL ROSTER</small>
+        <h1 id="roster-title">비무첩</h1>
+        <p>상대를 골라 검로를 여십시오</p>
+        <div class="roster-cards" role="listbox" aria-label="비무 상대 선택">
+          <button class="roster-card selected" type="button" data-enemy="yama" role="option" aria-selected="true">
+            <i>魔</i><span class="difficulty">보스 · 월하 산정 비무장</span><strong>흑풍검 염라</strong><b>黑風劍 閻羅</b><em>쾌검 · 변칙 · 살풍세 2페이즈</em>
+          </button>
+          <button class="roster-card" type="button" data-enemy="mujin" role="option" aria-selected="false">
+            <i>鐵</i><span class="difficulty">정예 · 청석관문</span><strong>철산도객 무진</strong><b>鐵山刀客 武震</b><em>중도 · 기세 압박 · 묵직한 고정 패턴</em>
+          </button>
+        </div>
+        <footer>← → 상대 선택 · ENTER 비무 시작</footer>
+      </div>
+    </section>
+
+    <section id="duel-result" class="result-panel" aria-live="polite" aria-hidden="true">
+      <small id="result-kicker">比武 終了</small><strong id="result-title">승부가 끝났습니다</strong><span id="result-opponent"></span>
+      <div><button id="retry-duel" type="button">재도전</button><button id="choose-opponent" type="button">상대 선택</button></div>
+    </section>
 
     <section id="hud" aria-live="polite">
       <div class="status-card player-card">
@@ -25,11 +47,11 @@
 
       <div class="status-card enemy-card">
         <div class="status-copy">
-          <div class="name-row"><span id="enemy-state">대기</span><strong>흑풍검 염라 <small id="enemy-phase">1식</small></strong></div>
+          <div class="name-row"><span id="enemy-state">대기</span><strong><b id="enemy-name">흑풍검 염라</b> <small id="enemy-phase">1식</small></strong></div>
           <div class="bar hp"><i id="enemy-hp"></i><b id="enemy-hp-text"></b></div>
           <div class="bar poise"><i id="enemy-poise"></i><b id="enemy-poise-text">氣勢 100 / 100</b></div>
         </div>
-        <div class="portrait enemy">魔</div>
+        <div class="portrait enemy" id="enemy-portrait">魔</div>
       </div>
     </section>
 
@@ -75,16 +97,17 @@
     <div id="tooltip" role="tooltip"></div>
   </main>
 
-  <script src="js/data.js?v=0.6.0"></script>
-  <script src="js/camera.js?v=0.6.0"></script>
-  <script src="js/audio.js?v=0.6.0"></script>
-  <script src="js/effects.js?v=0.6.0"></script>
-  <script src="js/character.js?v=0.6.0"></script>
-  <script src="js/enemy-defense.js?v=0.6.0"></script>
-  <script src="js/boss-phase.js?v=0.6.0"></script>
-  <script src="js/skills.js?v=0.6.0"></script>
-  <script src="js/defense.js?v=0.6.0"></script>
-  <script src="js/combat.js?v=0.6.0"></script>
-  <script src="js/main.js?v=0.6.0"></script>
+  <script src="js/data.js?v=0.7.0"></script>
+  <script src="js/camera.js?v=0.7.0"></script>
+  <script src="js/audio.js?v=0.7.0"></script>
+  <script src="js/effects.js?v=0.7.0"></script>
+  <script src="js/character.js?v=0.7.0"></script>
+  <script src="js/enemy-defense.js?v=0.7.0"></script>
+  <script src="js/boss-phase.js?v=0.7.0"></script>
+  <script src="js/mujin.js?v=0.7.0"></script>
+  <script src="js/skills.js?v=0.7.0"></script>
+  <script src="js/defense.js?v=0.7.0"></script>
+  <script src="js/combat.js?v=0.7.0"></script>
+  <script src="js/main.js?v=0.7.0"></script>
 </body>
 </html>
